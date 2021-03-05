@@ -86,6 +86,6 @@ NOTE: `interfaceId` is the first 4 bytes of the provided `bytes data`
 
 ```Solidity
 
-(bool success, bytes memory returnData) = target.call(data)
+(bool success, bytes memory returnData) = target.call(data) // forwarding value as-well
 
 ```
