@@ -65,7 +65,7 @@ function addRefunder(address refunder)
 
 **Refund calculations**
 
-```Soldiity
+```Solidity
 modifier netGasCost(targetContract, interfaceId) {
     uint256 gasProvided = gasleft();
     uint256 refundCost = refunder.getRefundCost(targetContract, interfaceId, tx.gasprice) // TODO think about nonReetrant solution
