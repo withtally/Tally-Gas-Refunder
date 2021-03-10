@@ -27,15 +27,12 @@ Forwards the provided contract call data (e.g raw msg + signature) to the target
 
 #### Interface
 
-Note: 
-Function calls must be `NonReentrant`
-
 ```Solidity
 
 // Edits the refundables mapping
 function updateRefundable(address target, bytes4 identifierId, bool whitelist)
 
-// Relays the call to the target address (if supported) and refunds the msg.sender
+// Relays the call to the target address (if supported) and refunds the msg.sender. Should be non reentrant
 function relayAndRefund(address target, bytes4 interfaceId, bytes arguments) external returns (bool)
 
 // Withdraws ETH from the Refunder contract
