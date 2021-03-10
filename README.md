@@ -71,3 +71,31 @@ modifier netGasCost() {
 The registry contract stores all `Refunder`s deployed and their supported `targetContract`s and `identifiers`. Anyone is able to:
 - query all deployed refunder contracts
 - query by a given pair of `(targetContract, identifierId)` the list of `refunderContract`s that are willing to refund the `msg.sender`
+
+#### Pseudo-code
+
+```Solidity
+contract Registry {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
+    // Map of refunders and their version, starting with 1
+    mapping(address => uint8) refunderVersion;
+
+    // Tuple of target address + identifier corresponding to set of refunders
+    mapping(address => mapping(bytes4 => EnumerableSet.AddressSet)) aggregatedRefundables;
+
+    // Set of refunders
+    EnumerableSet.AddressSet public refunders;
+
+    // Returns all refunders
+    // function getRefunders() returns address[]
+
+    // Returns all refunders willing to sponsor the following target + identifier
+    // function refundersFor(address target, bytes4 identifier)
+
+    // Only refunder contract can call. Adds the refunder contract in the Address Set
+    // If support is true -> refunder is marked to refund target+identifier calls
+    // If support is false -> refunder is marked NOT to refund target+identifier calls
+    // function updateRefundable(address target, bytes4 identifier, bool support)
+}
+```
