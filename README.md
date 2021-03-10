@@ -91,7 +91,7 @@ contract Registry {
     // function getRefunders() returns address[]
 
     // Returns all refunders willing to sponsor the following target + identifier
-    // function refundersFor(address target, bytes4 identifier)
+    // function refundersFor(address target, bytes4 identifier) returns address[]
 
     // Only refunder contract can call. Adds the refunder contract in the Address Set
     // If support is true -> refunder is marked to refund target+identifier calls
