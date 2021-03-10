@@ -33,7 +33,7 @@ Function calls must be `NonReentrant`
 ```Solidity
 
 // Edits the refundables mapping
-function updateRefundables(address target, bytes4 identifierId, bool whitelist)
+function updateRefundable(address target, bytes4 identifierId, bool whitelist)
 
 // Relays the call to the target address (if supported) and refunds the msg.sender
 function relayAndRefund(address target, bytes4 interfaceId, bytes arguments) external returns (bool)
