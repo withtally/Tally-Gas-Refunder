@@ -5,16 +5,16 @@ A generic contract system for reliably refunding the gas costs of transactions. 
 
 ## Contracts
 
-There are 2 major contracts:
+There are 3 contracts:
 -  Refunder factory
 -  Refunder
+-  Registry
 
 ### Refunder Factory
 Factory contract used for the deployment of `Refunder` contracts. Anyone is able to deploy a refunder contract and configure it for its own needs.
 The factory uses OpenZeppelin's [EIP-1167](https://eips.ethereum.org/EIPS/eip-1167) Clone implementation found [here](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/proxy/Clones.sol) for minimising gas costs.
 - On deployment:
   - `msg.sender` is the initial owner of the `Refunder` contract.  
-TODO add registry info
 
 ### Refunder
 Refunder contract is a standalone, completely independent contract that represents the interest of a given protocol/entity that wants to sponsor a set of function calls.
@@ -65,3 +65,9 @@ modifier netGasCost() {
 (bool success, bytes memory returnData) = target.call(data) // forwarding value as-well
 
 ```
+
+### Registry
+
+The registry contract stores all `Refunder`s deployed and their supported `targetContract`s and `identifiers`. Anyone is able to:
+- query all deployed refunder contracts
+- query by a given pair of `(targetContract, identifierId)` the list of `refunderContract`s that are willing to refund the `msg.sender`
