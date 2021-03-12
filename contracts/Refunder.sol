@@ -4,12 +4,14 @@ pragma solidity ^0.7.4;
 
 import "./IRefunder.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
-// Use openzeppelin ownable
 contract Refunder is Ownable, IRefunder {
+    using Address for address;
+
 
     uint REFUND_COST = 0;
-    uint MAX_GAS_PRICE = 0;
+    uint maxGasPrice = 0;
     bool locked = false;
     
     event Deposit(address indexed depositor, uint indexed value);
@@ -19,6 +21,7 @@ contract Refunder is Ownable, IRefunder {
 
     mapping(address => mapping(bytes4 => bool)) refundables;
 
+    // open zeppelin
     modifier lock() {
         require(!locked);
         locked = true;
@@ -30,9 +33,9 @@ contract Refunder is Ownable, IRefunder {
 
     // You must have `netGasCost` modifier - example: https://github.com/withtally/Tally-Gas-Refunder/tree/spec/v1#pseudo-code
     modifier netGasCost() {
-        require(tx.gasprice <= MAX_GAS_PRICE);
+        require(tx.gasprice <= maxGasPrice);
         uint256 gasProvided = gasleft();
-        
+
         _;
         
         uint256 gasUsedSoFar = gasProvided - gasleft();
@@ -45,8 +48,7 @@ contract Refunder is Ownable, IRefunder {
         _;
     }
 
-    
-    function deposit() external payable {
+    receive() external payable {
         emit Deposit(msg.sender, msg.value);
     }
 
@@ -57,13 +59,13 @@ contract Refunder is Ownable, IRefunder {
     }
 
     function setMaxGasPrice(uint256 gasPrice) external override onlyOwner {
-        MAX_GAS_PRICE = gasPrice;
+        maxGasPrice = gasPrice;
     }
 
     // Returns true/false whether the specified contract call is eligible for gas refund
-    function isEligible(address targetContract, bytes4 interfaceId, uint256 gasPrice) external override view returns (bool) {
-        return refundables[targetContract][interfaceId];
-    }
+    // function isEligible(address targetContract, bytes4 interfaceId, uint256 gasPrice) external override view returns (bool) {
+    //     return refundables[targetContract][interfaceId];
+    // }
 
     function whitelistRefunable(address targetContract, bytes4 interfaceId, bool isRefundable_) external override onlyOwner {
         refundables[targetContract][interfaceId] = isRefundable_;
@@ -83,6 +85,7 @@ contract Refunder is Ownable, IRefunder {
     function refund(address sender, uint256 amount) internal returns (bool) {
         address payable payableAddrSender = payable(sender);
         sendValue(payableAddrSender, amount);
+        
         return true;
     }
 
