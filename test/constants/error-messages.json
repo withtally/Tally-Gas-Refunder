@@ -1,4 +1,5 @@
 {
     "NOT_AN_OWNER": "caller is not the owner",
-    "INSUFFICIENT_BALANCE": "insufficient balance"
+    "INSUFFICIENT_BALANCE": "insufficient balance",
+    "NOT_REFUNDABLE": "It's not refundable"
 }
