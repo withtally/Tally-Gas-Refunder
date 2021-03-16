@@ -3,10 +3,10 @@
 pragma solidity ^0.7.4;
 
 import "./IRefunder.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
-contract Refunder is Ownable, IRefunder {
+contract Refunder is OwnableUpgradeable, IRefunder {
     using Address for address;
 
     uint256 public maxGasPrice = 0;
@@ -60,6 +60,10 @@ contract Refunder is Ownable, IRefunder {
 
     receive() external payable {
         emit Deposit(msg.sender, msg.value);
+    }
+
+    function init() external override initializer {
+        __Ownable_init();
     }
 
     function withdraw(uint256 value) external override onlyOwner lock {

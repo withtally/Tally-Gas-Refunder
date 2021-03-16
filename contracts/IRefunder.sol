@@ -3,13 +3,13 @@
 pragma solidity ^0.7.4;
 
 interface IRefunder {
+    function init() external;
+
     function whitelistRefundable(
         address targetContract,
         bytes4 interfaceId,
         bool isRefundable_
     ) external;
-
-    // function isEligible(address targetContract, bytes4 interfaceId, uint256 gasPrice) external returns (bool);
 
     function withdraw(uint256 amount) external;
 
