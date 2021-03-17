@@ -5,15 +5,16 @@ pragma solidity ^0.7.4;
 import "./IRefunder.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 
-contract Refunder is OwnableUpgradeable, PausableUpgradeable, IRefunder {
-
+contract Refunder is ReentrancyGuard, OwnableUpgradeable, PausableUpgradeable, IRefunder {
     using Address for address;
 
     uint256 public maxGasPrice = 0;
-    uint256 REFUND_COST = 22835;
-    uint256 REFUND_OP_GAS_COST = 11278;
+    uint256 REFUND_COST = 22543;
+    uint256 REFUND_OP_GAS_COST = 7662;
 
     event Deposit(address indexed depositor, uint256 value);
     event Withdraw(address indexed owner, uint256 value);
@@ -30,22 +31,23 @@ contract Refunder is OwnableUpgradeable, PausableUpgradeable, IRefunder {
 
     mapping(address => mapping(bytes4 => bool)) public refundables;
 
+    modifier relayAndRefundRequirements (address targetContract, bytes4 interfaceId) {
+        require(tx.gasprice <= maxGasPrice, "Gas price is too expensive");
+        require(refundables[targetContract][interfaceId], "It's not refundable");
+
+        _;
+    }
+
     // You must have `netGasCost` modifier - example: https://github.com/withtally/Tally-Gas-Refunder/tree/spec/v1#pseudo-code
     modifier netGasCost(address targetContract, bytes4 interfaceId) {
         uint256 gasProvided = gasleft();
         
-        require(tx.gasprice <= maxGasPrice, "Gas price is too expensive");
-        require(refundables[targetContract][interfaceId], "It's not refundable");
-
-        _pause();
-
         _;
 
         uint256 gasUsedSoFar = gasProvided - gasleft();
         uint256 refundAmount = (gasUsedSoFar + REFUND_COST + REFUND_OP_GAS_COST) * tx.gasprice;
 
         refund(msg.sender, refundAmount);
-        _unpause();
     }
 
     receive() external payable {
@@ -56,12 +58,10 @@ contract Refunder is OwnableUpgradeable, PausableUpgradeable, IRefunder {
         __Ownable_init();
     }
 
-    function withdraw(uint256 value) external override onlyOwner {
-        _pause();
+    function withdraw(uint256 value) external override onlyOwner nonReentrant {
         address payable payableAddrSender = payable(msg.sender);
         Address.sendValue(payableAddrSender, value);
         emit Withdraw(msg.sender, value);
-        _unpause();
     }
 
     function setMaxGasPrice(uint256 gasPrice) external override onlyOwner {
@@ -85,6 +85,9 @@ contract Refunder is OwnableUpgradeable, PausableUpgradeable, IRefunder {
         external
         override
         netGasCost(target, identifierId)
+        relayAndRefundRequirements(target, identifierId)
+        whenNotPaused
+        nonReentrant
         returns (bytes memory)
     {
         bytes memory data = abi.encodeWithSelector(identifierId, arguments);
@@ -100,5 +103,13 @@ contract Refunder is OwnableUpgradeable, PausableUpgradeable, IRefunder {
         Address.sendValue(payableAddrSender, amount);
 
         return true;
+    }
+
+    function pause() onlyOwner external {
+        _pause();
+    }
+
+    function unpause() onlyOwner external {
+        _unpause();
     }
 }

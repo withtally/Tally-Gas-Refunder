@@ -110,7 +110,7 @@ describe("Refunder", function() {
 			let txReceipt = await withdrawRes.wait();
 
 			expect(txReceipt.events, 'No events are emitted').to.be.ok;
-			expect(txReceipt.events[1].event, 'Invalid event name').to.be.eq('Withdraw');
+			expect(txReceipt.events[0].event, 'Invalid event name').to.be.eq('Withdraw');
 
 			const balanceOfRefunderAfter = await ethers.provider.getBalance(refunder.address);
 	
@@ -259,7 +259,7 @@ describe("Refunder", function() {
 			let txReceipt = await res.wait();
 			
 			expect(txReceipt.events, 'No events are emitted').to.be.ok;
-			expect(txReceipt.events[1].event, 'Invalid event name').to.be.eq('RelayAndRefund');
+			expect(txReceipt.events[0].event, 'Invalid event name').to.be.eq('RelayAndRefund');
 
 			const balanceAfter = await ethers.provider.getBalance(addr1.address);
 
