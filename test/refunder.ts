@@ -54,6 +54,7 @@ describe("Refunder", function() {
 		const Refunder = await ethers.getContractFactory("Refunder");
 		refunder = await Refunder.deploy();
 		await refunder.deployed();
+		await refunder.init();
 	})
 
 	describe('Sending ETHs', () => {
@@ -92,6 +93,7 @@ describe("Refunder", function() {
 	});
 
 	describe('Withdraw ETHs', () => {
+
 		it("Owner should withdraw ETHs from Refunder", async function() {
 		
 			const value = ethToWei('2');

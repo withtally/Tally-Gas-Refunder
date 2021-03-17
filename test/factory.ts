@@ -19,7 +19,7 @@ describe('Factory', () => {
         Refunder = await ethers.getContractFactory("Refunder");
 		masterRefunder = await Refunder.deploy();
 		await masterRefunder.deployed();
-        let res = masterRefunder.init();
+        let res = await masterRefunder.init();
 
         const Factory = await ethers.getContractFactory("RefunderFactory");
 		factory = await Factory.deploy(masterRefunder.address);
