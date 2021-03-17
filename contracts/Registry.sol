@@ -33,11 +33,26 @@ contract Registry is Ownable, IRegistry {
     function updateRefunder(address refunder, bool active) external override hasFactory {
         require(msg.sender == _factory, "Caller is not the Factory");
 
-        refunders._add();
+        if (active && !refunders.contains(refunder)) {
+            refunders.add(refunder);
+            return;
+        }
+
+        if (!active && refunders.contains(refunder)) {
+            refunders.remove(refunder);
+        }
     }
 
     // Returns all refunders
-    // function getRefunders() returns address[]
+    function getRefunders() external view override returns (address[] memory) {
+        address[] memory result = new address[](refunders.length());
+
+        for (uint256 i = 0; i < refunders.length(); i++) {
+            result[i] = refunders.at(i);
+        }
+
+        return result;
+    }
 
     // Returns all refunders willing to sponsor the following target + identifier
     // function refundersFor(address target, bytes4 identifier) returns address[]
