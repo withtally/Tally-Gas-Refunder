@@ -223,6 +223,7 @@ describe("Refunder", function() {
 	});
 
 	describe('Relay and refund', () => {
+
 		beforeEach(async () => {
 			
 			let res = await owner.sendTransaction({
@@ -249,9 +250,12 @@ describe("Refunder", function() {
 			const hexString = strToHex(text);
 			const args = ethers.utils.arrayify(hexString);
 			
-			res = await refunder.connect(addr1).relayAndRefund(greeter.address, funcIdAsBytes, args);
-			let txReceipt = await res.wait();
+			res = await refunder.connect(addr1).relayAndRefund(greeter.address, funcIdAsBytes, args, {
+				gasLimit: 200000
+			});
 
+			let txReceipt = await res.wait();
+			
 			expect(txReceipt.events, 'No events are emitted').to.be.ok;
 			expect(txReceipt.events[1].event, 'Invalid event name').to.be.eq('RelayAndRefund');
 

@@ -11,7 +11,8 @@ contract Refunder is Ownable, Pausable, IRefunder {
     using Address for address;
 
     uint256 public maxGasPrice = 0;
-    uint256 REFUND_COST = 37436;
+    uint256 REFUND_COST = 22835;
+    uint256 REFUND_OP_GAS_COST = 11278;
 
     event Deposit(address indexed depositor, uint256 value);
     event Withdraw(address indexed owner, uint256 value);
@@ -40,7 +41,8 @@ contract Refunder is Ownable, Pausable, IRefunder {
         _;
 
         uint256 gasUsedSoFar = gasProvided - gasleft();
-        uint256 refundAmount = (gasUsedSoFar + REFUND_COST) * tx.gasprice;
+        uint256 refundAmount = (gasUsedSoFar + REFUND_COST + REFUND_OP_GAS_COST) * tx.gasprice;
+
         refund(msg.sender, refundAmount);
         _unpause();
     }
