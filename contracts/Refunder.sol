@@ -4,18 +4,18 @@ pragma solidity ^0.7.4;
 
 import "./IRefunder.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
+import { Address } from "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 
-contract Refunder is Ownable, IRefunder {
+contract Refunder is Ownable, Pausable, IRefunder {
     using Address for address;
 
     uint256 public maxGasPrice = 0;
     uint256 REFUND_COST = 37436;
-    bool locked = false;
 
-    event Deposit(address indexed depositor, uint256 indexed value);
-    event Withdraw(address indexed owner, uint256 indexed value);
-    event RefundableChanged(
+    event Deposit(address indexed depositor, uint256 value);
+    event Withdraw(address indexed owner, uint256 value);
+    event RefundableUpdate(
         address indexed targetContract,
         bytes4 indexed interfaceId,
         bool indexed isRefundable
@@ -28,44 +28,33 @@ contract Refunder is Ownable, IRefunder {
 
     mapping(address => mapping(bytes4 => bool)) public refundables;
 
-    // open zeppelin
-    modifier lock() {
-        require(!locked, "Contract is locked");
-        locked = true;
-
-        _;
-
-        locked = false;
-    }
-
     // You must have `netGasCost` modifier - example: https://github.com/withtally/Tally-Gas-Refunder/tree/spec/v1#pseudo-code
-    modifier netGasCost() {
-        require(tx.gasprice <= maxGasPrice, "Gas price is too expensive");
+    modifier netGasCost(address targetContract, bytes4 interfaceId) {
         uint256 gasProvided = gasleft();
+        
+        require(tx.gasprice <= maxGasPrice, "Gas price is too expensive");
+        require(refundables[targetContract][interfaceId], "It's not refundable");
+
+        _pause();
 
         _;
 
         uint256 gasUsedSoFar = gasProvided - gasleft();
         uint256 refundAmount = (gasUsedSoFar + REFUND_COST) * tx.gasprice;
         refund(msg.sender, refundAmount);
-    }
-
-    modifier isRefundable(address targetContract, bytes4 interfaceId) {
-        require(
-            refundables[targetContract][interfaceId],
-            "It's not refundable"
-        );
-        _;
+        _unpause();
     }
 
     receive() external payable {
         emit Deposit(msg.sender, msg.value);
     }
 
-    function withdraw(uint256 value) external override onlyOwner lock {
+    function withdraw(uint256 value) external override onlyOwner {
+        _pause();
         address payable payableAddrSender = payable(msg.sender);
-        sendValue(payableAddrSender, value);
+        Address.sendValue(payableAddrSender, value);
         emit Withdraw(msg.sender, value);
+        _unpause();
     }
 
     function setMaxGasPrice(uint256 gasPrice) external override onlyOwner {
@@ -78,7 +67,7 @@ contract Refunder is Ownable, IRefunder {
         bool isRefundable_
     ) external override onlyOwner {
         refundables[targetContract][interfaceId] = isRefundable_;
-        emit RefundableChanged(targetContract, interfaceId, isRefundable_);
+        emit RefundableUpdate(targetContract, interfaceId, isRefundable_);
     }
 
     function relayAndRefund(
@@ -88,12 +77,10 @@ contract Refunder is Ownable, IRefunder {
     )
         external
         override
-        isRefundable(target, identifierId)
-        lock
-        netGasCost
+        netGasCost(target, identifierId)
         returns (bytes memory)
     {
-        bytes memory data = abi.encodeWithSelector(identifierId, arguments); // or abi.encodePacked
+        bytes memory data = abi.encodeWithSelector(identifierId, arguments);
         (bool success, bytes memory returnData) = target.call(data);
 
         require(success, "Function call not successful");
@@ -103,23 +90,8 @@ contract Refunder is Ownable, IRefunder {
 
     function refund(address sender, uint256 amount) internal returns (bool) {
         address payable payableAddrSender = payable(sender);
-        // address(this).sendValue(payableAddrSender, amount);
-        sendValue(payableAddrSender, amount);
+        Address.sendValue(payableAddrSender, amount);
 
         return true;
-    }
-
-    function sendValue(address payable recipient, uint256 amount) internal {
-        require(
-            address(this).balance >= amount,
-            "Address: insufficient balance"
-        );
-
-        // solhint-disable-next-line avoid-low-level-calls, avoid-call-value
-        (bool success, ) = recipient.call{value: amount}("");
-        require(
-            success,
-            "Address: unable to send value, recipient may have reverted"
-        );
     }
 }

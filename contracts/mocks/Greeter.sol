@@ -8,7 +8,6 @@ contract Greeter {
   string greeting;
 
   constructor(string memory _greeting) {
-    // console.log("Deploying a Greeter with greeting:", _greeting);
     greeting = _greeting;
   }
 
@@ -17,7 +16,6 @@ contract Greeter {
   }
 
   function setGreeting(string memory _greeting) public {
-    // console.log("Changing greeting from '%s' to '%s'", greeting, _greeting);
     greeting = _greeting;
   }
 }
