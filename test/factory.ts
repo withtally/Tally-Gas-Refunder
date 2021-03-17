@@ -21,9 +21,16 @@ describe('Factory', () => {
 		await masterRefunder.deployed();
         let res = await masterRefunder.init();
 
+        let Registry = await ethers.getContractFactory("Registry");
+		let registry = await Registry.deploy();
+        await registry.deployed();
+
         const Factory = await ethers.getContractFactory("RefunderFactory");
-		factory = await Factory.deploy(masterRefunder.address);
+		factory = await Factory.deploy(masterRefunder.address, registry.address);
 		await factory.deployed();
+
+        res = await registry.setFactory(factory.address);
+        await res.wait()
     });
 
     it('Owner of Master Refunder should be deployer', async () => {
