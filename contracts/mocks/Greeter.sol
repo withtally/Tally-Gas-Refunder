@@ -16,6 +16,7 @@ contract Greeter {
   }
 
   function setGreeting(string memory _greeting) public {
+    require(bytes(_greeting).length < 40, "Greet is too long");
     greeting = _greeting;
   }
 }

@@ -10,7 +10,8 @@ import {
 	INSUFFICIENT_BALANCE, 
 	NOT_AN_OWNER,
 	NOT_REFUNDABLE,
-	TOO_EXPENSIVE_GAS_PRICE
+	TOO_EXPENSIVE_GAS_PRICE,
+	FUNC_CALL_NOT_SUCCESSFUL
 } from './constants/error-messages.json';
 
 const ethToWei = (ether: string) => {
@@ -35,6 +36,10 @@ const strToHex = (text: string) => {
 	return '0x' + msg;
 }
 
+const getXPercentFrom = (number: BigNumber, percent: number) => {
+	return number.div(BigNumber.from('100')).mul(BigNumber.from(percent.toString()));
+}
+
 
 describe("Refunder", function() {
 
@@ -44,11 +49,13 @@ describe("Refunder", function() {
   	let greeter: Contract;
 	let refunder: Contract;
 
+	const greeterInitGreet = 'Hello, world!';
+
 	beforeEach(async () => {
 		[owner, addr1] = await ethers.getSigners(); 
 
 	  	const Greeter = await ethers.getContractFactory("Greeter");
-		greeter = await Greeter.deploy("Hello, world!");
+		greeter = await Greeter.deploy(greeterInitGreet);
 		await greeter.deployed();
 
 		const Refunder = await ethers.getContractFactory("Refunder");
@@ -62,11 +69,6 @@ describe("Refunder", function() {
 		it("Should be able to deposit ethers", async function() {
 
 			const depositEventFilter = refunder.filters.Deposit();
-
-			refunder = refunder.on(depositEventFilter, (log, event) => {
-				console.log(log);
-				console.log(event);
-			});
 
 			const balanceOfRefunderBefore = await ethers.provider.getBalance(refunder.address);
 			const value = ethToWei('0.5');
@@ -172,7 +174,7 @@ describe("Refunder", function() {
 			const resBefore = await refunder.refundables(randomAddress, randomFuncIdAsBytes); 
 			expect(resBefore).to.be.eq(false);
 
-			const res = await refunder.whitelistRefundable(randomAddress, randomFuncIdAsBytes, true);
+			const res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, true);
 			let txReceipt = await res.wait();
 
 			expect(txReceipt.events, 'No events are emitted').to.be.ok;
@@ -191,13 +193,13 @@ describe("Refunder", function() {
 			const resBefore = await refunder.refundables(randomAddress, randomFuncIdAsBytes); 
 			expect(resBefore).to.be.eq(false);
 
-			let res = await refunder.whitelistRefundable(randomAddress, randomFuncIdAsBytes, true);
+			let res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, true);
 			await res.wait();
 
 			const resAfter = await refunder.refundables(randomAddress, randomFuncIdAsBytes); 
 			expect(resAfter).to.be.eq(true);
 
-			res = await refunder.whitelistRefundable(randomAddress, randomFuncIdAsBytes, false);
+			res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, false);
 			await res.wait();
 
 			const resAfterEdit = await refunder.refundables(randomAddress, randomFuncIdAsBytes); 
@@ -210,17 +212,17 @@ describe("Refunder", function() {
 			const randomFuncId = ethers.utils.id('setGreeting(string)');
 			const randomFuncIdAsBytes = ethers.utils.arrayify(randomFuncId.substr(0, 10))
 
-			await expect(refunder.connect(addr1).whitelistRefundable(randomAddress, randomFuncIdAsBytes, true)).to.be.revertedWith(NOT_AN_OWNER);
+			await expect(refunder.connect(addr1).updateRefundable(randomAddress, randomFuncIdAsBytes, true)).to.be.revertedWith(NOT_AN_OWNER);
 		});
 
 		it("Not owner should NOT be able to edit refundable", async function() {
 			const randomAddress = greeter.address;
 			const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
 
-			let res = await refunder.whitelistRefundable(randomAddress, randomFuncIdAsBytes, true);
+			let res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, true);
 			await res.wait();
 
-			await expect(refunder.connect(addr1).whitelistRefundable(randomAddress, randomFuncIdAsBytes, false)).to.be.revertedWith(NOT_AN_OWNER);
+			await expect(refunder.connect(addr1).updateRefundable(randomAddress, randomFuncIdAsBytes, false)).to.be.revertedWith(NOT_AN_OWNER);
 		});
 	});
 
@@ -239,36 +241,65 @@ describe("Refunder", function() {
 			await res.wait();
 		});
 
-		it('Successfully refund whitelisted contract function', async () => {
+		it.only('Successfully refund whitelisted contract function', async () => {
 
 			const funcIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
 			
-			let res = await refunder.whitelistRefundable(greeter.address, funcIdAsBytes, true);
+			let res = await refunder.updateRefundable(greeter.address, funcIdAsBytes, true);
 			await res.wait();
 
-			const balanceBefore = await ethers.provider.getBalance(addr1.address);
+			const testUser = addr1;
+			const balanceBefore = await ethers.provider.getBalance(testUser.address);
 			
 			const text = 'Hello, Tester!';
 			const hexString = strToHex(text);
 			const args = ethers.utils.arrayify(hexString);
 			
-			res = await refunder.connect(addr1).relayAndRefund(greeter.address, funcIdAsBytes, args, {
+			res = await refunder.connect(testUser).relayAndRefund(greeter.address, funcIdAsBytes, args, {
 				gasLimit: 200000
 			});
 
 			let txReceipt = await res.wait();
+			let txCost = res.gasPrice.mul(txReceipt.gasUsed)
+			
+			const balanceAfter = await ethers.provider.getBalance(testUser.address);
+			expect(balanceAfter.lt(balanceBefore), 'Sender was over refunded');
 			
 			expect(txReceipt.events, 'No events are emitted').to.be.ok;
 			expect(txReceipt.events[0].event, 'Invalid event name').to.be.eq('RelayAndRefund');
 
-			const balanceAfter = await ethers.provider.getBalance(addr1.address);
-
 			const difference = balanceBefore.sub(balanceAfter);
 			expect(difference.lt(BigNumber.from('200000000000')), `Account was not refunded or refunded too much. ${difference.toString()}`).to.be.ok; // 200 gwei
 
+			const percent = 5;
+			let percentFrom = getXPercentFrom(txCost, percent);
+			expect(difference.lt(percentFrom), `User was refunded less than ${100 - percent}%`);
+
 			res = await greeter.greet();
+			expect(res).to.be.equal(text);			
+		});
+
+		it('Whitelisted function should revert, sender should NOT be refund', async () => {
+
+			const funcIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
 			
-			expect(res).to.be.equal(text);
+			let res = await refunder.updateRefundable(greeter.address, funcIdAsBytes, true);
+			await res.wait();
+
+			const balanceBefore = await ethers.provider.getBalance(addr1.address);
+			
+			const text = 'Hello, Tester! This greet is toooooooooooooo lonngggggggg';
+			const hexString = strToHex(text);
+			const args = ethers.utils.arrayify(hexString);
+			
+			await expect(refunder.connect(addr1).relayAndRefund(greeter.address, funcIdAsBytes, args)).to.be.revertedWith(FUNC_CALL_NOT_SUCCESSFUL);
+			
+			const balanceAfter = await ethers.provider.getBalance(addr1.address);
+
+			expect(balanceAfter.lt(balanceBefore), 'Sender was over refunded');
+
+			res = await greeter.greet();
+			expect(res).to.be.equal(greeterInitGreet);
 			
 		});
 
@@ -280,22 +311,29 @@ describe("Refunder", function() {
 		});
 
 		it('Should NOT be refunded, gas price is too expensive', async () => {
+
+			const userAddress = addr1.address;
+
 			const funcIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
 			
 			let temp = await refunder.setMaxGasPrice('2000000000000')
 			await temp.wait();
 			
-			let res = await refunder.whitelistRefundable(greeter.address, funcIdAsBytes, true);
+			let res = await refunder.updateRefundable(greeter.address, funcIdAsBytes, true);
 			await res.wait();
 
 			const text = 'Hello, Tester!';
 			const hexString = ethers.utils.formatBytes32String(text);
 			const args = ethers.utils.arrayify(hexString);
+			
+			const balanceBefore = await ethers.provider.getBalance(userAddress);
 
 			await expect(refunder.connect(addr1).relayAndRefund(greeter.address, funcIdAsBytes, args, {
 				gasPrice: '2000000000001'
 			})).to.be.revertedWith(TOO_EXPENSIVE_GAS_PRICE);
 
+			const balanceAfter = await ethers.provider.getBalance(userAddress);
+			expect(balanceAfter.lt(balanceBefore), 'User was refunded').to.be.ok;
 		});
 	});
 });
