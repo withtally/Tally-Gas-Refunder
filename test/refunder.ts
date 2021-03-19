@@ -239,7 +239,7 @@ describe("Refunder", function() {
 			await res.wait();
 		});
 
-		it.only('Successfully refund whitelisted contract function', async () => {
+		it('Successfully refund whitelisted contract function', async () => {
 
 			const funcIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
 			
