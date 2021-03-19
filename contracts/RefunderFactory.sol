@@ -4,19 +4,18 @@ pragma solidity ^0.7.4;
 
 import "./IRegistry.sol";
 import "./IRefunder.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
-contract RefunderFactory is Ownable {
-
-    address _masterRefunder;
+contract RefunderFactory {
     address _registry;
 
-    event CreateRefunder(address indexed owner, address indexed refunderAddress);
+    event CreateRefunder(
+        address indexed owner,
+        address indexed refunderAddress
+    );
 
-    constructor(address masterRefunder_, address registry_) {
-        _masterRefunder = masterRefunder_;
+    constructor(address registry_) {
         _registry = registry_;
     }
 
@@ -25,10 +24,13 @@ contract RefunderFactory is Ownable {
         _;
     }
 
-    function createRefunder() external hasRegistry returns (address) {
+    function createRefunder(address _masterRefunder, uint8 version)
+        external
+        hasRegistry
+        returns (address)
+    {
         address newRefunder = Clones.clone(_masterRefunder);
-        IRefunder(newRefunder).init();
-        OwnableUpgradeable(newRefunder).transferOwnership(msg.sender);
+        IRefunder(newRefunder).init(msg.sender);
 
         emit CreateRefunder(msg.sender, newRefunder);
 

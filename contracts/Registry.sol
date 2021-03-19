@@ -1,16 +1,11 @@
 //SPDX-License-Identifier: MIT
 
 pragma solidity ^0.7.4;
-
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "./IRegistry.sol";
 
-contract Registry is Ownable, IRegistry {
-
+contract Registry is IRegistry {
     using EnumerableSet for EnumerableSet.AddressSet;
-    
-    address _factory;
 
     // Map of refunders and their version, starting with 1
     mapping(address => uint8) refunderVersion;
@@ -19,31 +14,18 @@ contract Registry is Ownable, IRegistry {
     mapping(address => mapping(bytes4 => EnumerableSet.AddressSet)) aggregatedRefundables;
 
     // Set of refunders
-    EnumerableSet.AddressSet private refunders;
+    EnumerableSet.AddressSet public refunders;
 
-    modifier hasFactory {
-        require(_factory != address(0), "Factory is not set");
-        _;
-    }
-
-    function setFactory(address factory_) external override onlyOwner {
-        _factory = factory_;
-    }
-
-    function updateRefunder(address refunder, bool active) external override hasFactory {
-        require(msg.sender == _factory, "Caller is not the Factory");
-
-        if (active && !refunders.contains(refunder)) {
+    // TODO version check != 0
+    function register(address refunder, uint8 version) external override {
+        if (!refunders.contains(refunder)) {
             refunders.add(refunder);
-            return;
-        }
-
-        if (!active && refunders.contains(refunder)) {
-            refunders.remove(refunder);
+            refunderVersion[refunder] = version;
+            // TODO emit event
         }
     }
 
-    // Returns all refunders
+    // Returns all refunders // TODO check if we can return the refunders with one call
     function getRefunders() external view override returns (address[] memory) {
         address[] memory result = new address[](refunders.length());
 
@@ -54,6 +36,13 @@ contract Registry is Ownable, IRegistry {
         return result;
     }
 
+    // TODO updateRefundable(targetAddress, interfaceId, supported (true/false)) onlyRefunder {}
+    // add/remove from aggregated refundables
+    // TODO Sets the version to 0
+    // function unregister() onlyRefunder {}
+
+    // TODO refundersFor(targetAddress, interfaceId) view refunders[]
+
     // Returns all refunders willing to sponsor the following target + identifier
     // function refundersFor(address target, bytes4 identifier) returns address[]
 
@@ -61,4 +50,4 @@ contract Registry is Ownable, IRegistry {
     // If support is true -> refunder is marked to refund target+identifier calls
     // If support is false -> refunder is marked NOT to refund target+identifier calls
     // function updateRefundable(address target, bytes4 identifier, bool support)
-} 
+}
