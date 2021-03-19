@@ -13,7 +13,7 @@ contract Refunder is ReentrancyGuard, OwnableUpgradeable, PausableUpgradeable, I
     using Address for address;
 
     uint256 public maxGasPrice = 0;
-    uint256 REFUND_COST = 22543;
+    uint256 BASE_REFUND_TX_COST = 20491;
     uint256 REFUND_OP_GAS_COST = 7662;
 
     event Deposit(address indexed depositor, uint256 value);
@@ -31,9 +31,15 @@ contract Refunder is ReentrancyGuard, OwnableUpgradeable, PausableUpgradeable, I
 
     mapping(address => mapping(bytes4 => bool)) public refundables;
 
-    modifier relayAndRefundRequirements (address targetContract, bytes4 interfaceId) {
+    modifier onlySupportedParams(
+        address targetContract,
+        bytes4 interfaceId
+    ) {
         require(tx.gasprice <= maxGasPrice, "Gas price is too expensive");
-        require(refundables[targetContract][interfaceId], "It's not refundable");
+        require(
+            refundables[targetContract][interfaceId],
+            "It's not refundable"
+        );
 
         _;
     }
@@ -41,11 +47,11 @@ contract Refunder is ReentrancyGuard, OwnableUpgradeable, PausableUpgradeable, I
     // You must have `netGasCost` modifier - example: https://github.com/withtally/Tally-Gas-Refunder/tree/spec/v1#pseudo-code
     modifier netGasCost(address targetContract, bytes4 interfaceId) {
         uint256 gasProvided = gasleft();
-        
         _;
 
         uint256 gasUsedSoFar = gasProvided - gasleft();
-        uint256 refundAmount = (gasUsedSoFar + REFUND_COST + REFUND_OP_GAS_COST) * tx.gasprice;
+        uint256 refundAmount =
+            (gasUsedSoFar + BASE_REFUND_TX_COST + REFUND_OP_GAS_COST) * tx.gasprice;
 
         refund(msg.sender, refundAmount);
     }
@@ -71,7 +77,7 @@ contract Refunder is ReentrancyGuard, OwnableUpgradeable, PausableUpgradeable, I
         maxGasPrice = gasPrice;
     }
 
-    function whitelistRefundable(
+    function updateRefundable(
         address targetContract,
         bytes4 interfaceId,
         bool isRefundable_
@@ -88,7 +94,7 @@ contract Refunder is ReentrancyGuard, OwnableUpgradeable, PausableUpgradeable, I
         external
         override
         netGasCost(target, identifierId)
-        relayAndRefundRequirements(target, identifierId)
+        onlySupportedParams(target, identifierId)
         whenNotPaused
         nonReentrant
         returns (bytes memory)
@@ -108,11 +114,11 @@ contract Refunder is ReentrancyGuard, OwnableUpgradeable, PausableUpgradeable, I
         return true;
     }
 
-    function pause() onlyOwner external {
+    function pause() external onlyOwner {
         _pause();
     }
 
-    function unpause() onlyOwner external {
+    function unpause() external onlyOwner {
         _unpause();
     }
 }
