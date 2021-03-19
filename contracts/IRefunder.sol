@@ -3,7 +3,7 @@
 pragma solidity ^0.7.4;
 
 interface IRefunder {
-    function init() external;
+    function init(address owner) external;
 
     function whitelistRefundable(
         address targetContract,

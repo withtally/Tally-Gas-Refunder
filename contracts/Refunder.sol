@@ -54,8 +54,11 @@ contract Refunder is ReentrancyGuard, OwnableUpgradeable, PausableUpgradeable, I
         emit Deposit(msg.sender, msg.value);
     }
 
-    function init() external override initializer {
+    function init(address owner_) external override initializer {
         __Ownable_init();
+        if (owner() != owner_) {
+            transferOwnership(owner_);
+        }
     }
 
     function withdraw(uint256 value) external override onlyOwner nonReentrant {

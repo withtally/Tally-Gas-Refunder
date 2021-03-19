@@ -4,6 +4,8 @@ import { Contract, ContractFactory } from "@ethersproject/contracts";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 
+const REFUNDER_VERSION = 1;
+
 describe('Factory', () => {
     let masterRefunder: Contract;
     let factory: Contract;
@@ -19,18 +21,15 @@ describe('Factory', () => {
         Refunder = await ethers.getContractFactory("Refunder");
 		masterRefunder = await Refunder.deploy();
 		await masterRefunder.deployed();
-        let res = await masterRefunder.init();
+        let res = await masterRefunder.init(owner.address);
 
         let Registry = await ethers.getContractFactory("Registry");
 		let registry = await Registry.deploy();
         await registry.deployed();
 
         const Factory = await ethers.getContractFactory("RefunderFactory");
-		factory = await Factory.deploy(masterRefunder.address, registry.address);
+		factory = await Factory.deploy(registry.address);
 		await factory.deployed();
-
-        res = await registry.setFactory(factory.address);
-        await res.wait()
     });
 
     it('Owner of Master Refunder should be deployer', async () => {
@@ -39,7 +38,7 @@ describe('Factory', () => {
     });
 
     it('Create Refunder', async () => {
-        let res = await factory.connect(notOwner).createRefunder();
+        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
         let txReceipt = await res.wait();
 
         const createRefunderEventIndex = 2;

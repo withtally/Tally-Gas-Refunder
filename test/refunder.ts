@@ -54,7 +54,7 @@ describe("Refunder", function() {
 		const Refunder = await ethers.getContractFactory("Refunder");
 		refunder = await Refunder.deploy();
 		await refunder.deployed();
-		await refunder.init();
+		await refunder.init(owner.address);
 	})
 
 	describe('Sending ETHs', () => {

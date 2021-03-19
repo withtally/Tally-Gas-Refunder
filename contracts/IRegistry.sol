@@ -3,7 +3,6 @@
 pragma solidity ^0.7.4;
 
 interface IRegistry {
-    function setFactory(address factory_) external;
-    function updateRefunder(address refunder, bool active) external;
+    function register(address refunder, uint8 version) external;
     function getRefunders() external returns (address[] memory);
 }

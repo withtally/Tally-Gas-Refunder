@@ -4,7 +4,6 @@ pragma solidity ^0.7.4;
 
 import "./IRegistry.sol";
 import "./IRefunder.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
 contract RefunderFactory {
@@ -34,12 +33,12 @@ contract RefunderFactory {
 
         emit CreateRefunder(msg.sender, newRefunder);
 
-        IRegistry(_registry).updateRefunder(newRefunder, true);
+        IRegistry(_registry).register(newRefunder, version);
 
         return newRefunder;
     }
 
-    function setRegistry(address registry_) external onlyOwner {
+    function setRegistry(address registry_) external {
         _registry = registry_;
     }
 }

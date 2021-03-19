@@ -1,6 +1,8 @@
 //SPDX-License-Identifier: MIT
 
 pragma solidity ^0.7.4;
+// pragma experimental ABIEncoderV2;
+
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "./IRegistry.sol";
 
@@ -14,7 +16,7 @@ contract Registry is IRegistry {
     mapping(address => mapping(bytes4 => EnumerableSet.AddressSet)) aggregatedRefundables;
 
     // Set of refunders
-    EnumerableSet.AddressSet public refunders;
+    EnumerableSet.AddressSet private refunders;
 
     // TODO version check != 0
     function register(address refunder, uint8 version) external override {
