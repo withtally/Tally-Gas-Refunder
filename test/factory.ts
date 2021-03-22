@@ -6,7 +6,7 @@ import { expect } from "chai";
 
 const REFUNDER_VERSION = 1;
 
-describe.only('Factory', () => {
+describe('Factory', () => {
     let masterRefunder: Contract;
     let factory: Contract;
 
@@ -21,7 +21,7 @@ describe.only('Factory', () => {
         Refunder = await ethers.getContractFactory("Refunder");
 		masterRefunder = await Refunder.deploy();
 		await masterRefunder.deployed();
-        let res = await masterRefunder.init(owner.address);
+        await masterRefunder.init(owner.address);
 
         let Registry = await ethers.getContractFactory("Registry");
 		let registry = await Registry.deploy();

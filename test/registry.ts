@@ -84,21 +84,8 @@ describe('Registry', () => {
         const randomFuncIdAsBytes = ethers.utils.arrayify(randomFuncId.substr(0, 10));
 
         let res = await registry.refundersFor(masterRefunder.address, randomFuncIdAsBytes);
-        console.log(res);
 
         expect(res.length).to.be.eq(0);
-        
-        // let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
-        // let txReceipt = await res.wait();
-
-        // const newRefunderAddress = txReceipt.events[2].args.refunderAddress;
-
-        // const newRefunder = await ethers.getContractAt("Refunder", newRefunderAddress);
-        // res = await newRefunder.connect(notOwner).unregister(registry.address);
-        // res.wait();
-
-        // res = await registry.getRefunders();
-        // expect(res.length).to.be.eq(0);
     });
 
     it('Should get all refundables for target + funcId', async () => {
