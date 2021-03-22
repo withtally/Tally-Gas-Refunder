@@ -101,37 +101,22 @@ describe('Registry', () => {
         // expect(res.length).to.be.eq(0);
     });
 
-    it.only('Should get all refundables for target + funcId', async () => {
+    it('Should get all refundables for target + funcId', async () => {
 
-        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
-        let txReceipt = await res.wait();
+        for(let i = 0; i < randomNum; i++) {
+            let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
+            let txReceipt = await res.wait();
 
-        const createRefunderEventIndex = 2;
-        const newRefunderAddress = txReceipt.events[createRefunderEventIndex].args.refunderAddress;
-        const newRefunder = await ethers.getContractAt("Refunder", newRefunderAddress);
+            const newRefunderAddress = txReceipt.events[2].args.refunderAddress;
+            const newRefunder = await ethers.getContractAt("Refunder", newRefunderAddress);
+            const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
+            res = await newRefunder.connect(notOwner).updateRefundable(greeter.address, randomFuncIdAsBytes, true, registry.address);
+            await res.wait();
 
+            res = await registry.refundersFor(greeter.address, randomFuncIdAsBytes);
 
-        const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
-
-        res = await newRefunder.connect(notOwner).updateRefundable(greeter.address, randomFuncIdAsBytes, true, registry.address);
-        await res.wait();
-
-        res = await registry.refundersFor(greeter.address, randomFuncIdAsBytes);
-        console.log('>> res');
-        console.log(res);
-
-        expect(res.length).to.be.eq(1);
-        
-        // let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
-        // let txReceipt = await res.wait();
-
-        // const newRefunderAddress = txReceipt.events[2].args.refunderAddress;
-
-        // const newRefunder = await ethers.getContractAt("Refunder", newRefunderAddress);
-        // res = await newRefunder.connect(notOwner).unregister(registry.address);
-        // res.wait();
-
-        // res = await registry.getRefunders();
-        // expect(res.length).to.be.eq(0);
+            expect(res.length).to.be.eq(i + 1);
+            expect(newRefunderAddress).to.be.eq(res[res.length - 1]);
+        }
     });
 });
