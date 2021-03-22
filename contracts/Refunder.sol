@@ -3,6 +3,7 @@
 pragma solidity ^0.7.4;
 
 import "./IRefunder.sol";
+import "./IRegistry.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -80,9 +81,12 @@ contract Refunder is ReentrancyGuard, OwnableUpgradeable, PausableUpgradeable, I
     function updateRefundable(
         address targetContract,
         bytes4 interfaceId,
-        bool isRefundable_
+        bool isRefundable_,
+        address registry
     ) external override onlyOwner {
         refundables[targetContract][interfaceId] = isRefundable_;
+        IRegistry(registry).updateRefundable(targetContract, interfaceId, isRefundable_);
+
         emit RefundableUpdate(targetContract, interfaceId, isRefundable_);
     }
 
@@ -120,5 +124,9 @@ contract Refunder is ReentrancyGuard, OwnableUpgradeable, PausableUpgradeable, I
 
     function unpause() external onlyOwner {
         _unpause();
+    }
+
+    function unregister(address registry_) external onlyOwner {
+        IRegistry(registry_).unregister();
     }
 }

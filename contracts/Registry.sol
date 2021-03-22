@@ -10,7 +10,7 @@ contract Registry is IRegistry {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     // Map of refunders and their version, starting with 1
-    mapping(address => uint8) refunderVersion;
+    mapping(address => uint8) public refunderVersion;
 
     // Tuple of target address + identifier corresponding to set of refunders
     mapping(address => mapping(bytes4 => EnumerableSet.AddressSet)) aggregatedRefundables;
@@ -18,16 +18,52 @@ contract Registry is IRegistry {
     // Set of refunders
     EnumerableSet.AddressSet private refunders;
 
-    // TODO version check != 0
+    event Register(address indexed refunder, uint8 version);
+    event Unregister(address indexed refunder);
+    event UpdateRefundable(address indexed refunder, address indexed targetAddress, bytes4 indexed interfaceId, bool supported);
+
+    modifier onlyRefunder() {
+        require(refunders.contains(msg.sender) && refunderVersion[msg.sender] > 0, "Refunder not found");
+        _;
+    }
+
     function register(address refunder, uint8 version) external override {
+        require(version != 0, "Version cannot be '0'");
+
         if (!refunders.contains(refunder)) {
             refunders.add(refunder);
             refunderVersion[refunder] = version;
-            // TODO emit event
+            
+            emit Register(refunder, version);
         }
     }
 
-    // Returns all refunders // TODO check if we can return the refunders with one call
+    // add/remove from aggregated refundables ??? params: address targetAddress, bytes4 interfaceId
+    function unregister() external override onlyRefunder {
+        if (refunders.contains(msg.sender)) {
+            refunders.remove(msg.sender);
+            refunderVersion[msg.sender] = 0;
+
+            // aggregatedRefundables[targetAddress][interfaceId].remove(msg.sender);
+            
+            emit Unregister(msg.sender);
+        }
+    }
+
+    // Only refunder contract can call. Adds the refunder contract in the Address Set
+    // If support is true -> refunder is marked to refund target+identifier calls
+    // If support is false -> refunder is marked NOT to refund target+identifier calls
+    function updateRefundable(address targetAddress, bytes4 interfaceId, bool supported) external override onlyRefunder {
+        if (supported) {
+            aggregatedRefundables[targetAddress][interfaceId].add(msg.sender);
+            emit UpdateRefundable(msg.sender, targetAddress, interfaceId, supported);
+            return;
+        }
+        
+        aggregatedRefundables[targetAddress][interfaceId].remove(msg.sender);
+        emit UpdateRefundable(msg.sender, targetAddress, interfaceId, supported);
+    }
+
     function getRefunders() external view override returns (address[] memory) {
         address[] memory result = new address[](refunders.length());
 
@@ -38,18 +74,14 @@ contract Registry is IRegistry {
         return result;
     }
 
-    // TODO updateRefundable(targetAddress, interfaceId, supported (true/false)) onlyRefunder {}
-    // add/remove from aggregated refundables
-    // TODO Sets the version to 0
-    // function unregister() onlyRefunder {}
+    function refundersFor(address targetAddress, bytes4 interfaceId) external view returns(address[] memory) {
+        address[] memory result = new address[](aggregatedRefundables[targetAddress][interfaceId].length());
 
-    // TODO refundersFor(targetAddress, interfaceId) view refunders[]
+        for (uint256 i = 0; i < aggregatedRefundables[targetAddress][interfaceId].length(); i++) {
+            result[i] = aggregatedRefundables[targetAddress][interfaceId].at(i);
+        }
 
-    // Returns all refunders willing to sponsor the following target + identifier
-    // function refundersFor(address target, bytes4 identifier) returns address[]
+        return result;
+    }
 
-    // Only refunder contract can call. Adds the refunder contract in the Address Set
-    // If support is true -> refunder is marked to refund target+identifier calls
-    // If support is false -> refunder is marked NOT to refund target+identifier calls
-    // function updateRefundable(address target, bytes4 identifier, bool support)
 }

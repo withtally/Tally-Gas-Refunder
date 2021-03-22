@@ -14,32 +14,14 @@ import {
 	FUNC_CALL_NOT_SUCCESSFUL
 } from './constants/error-messages.json';
 
-const ethToWei = (ether: string) => {
-	return ethers.utils.parseEther(ether);
-}
+import {
+	 ethToWei,
+	generateFuncIdAsBytes,
+	getXPercentFrom,
+	strToHex
+} from './utils/utils';
 
-const generateFuncIdAsBytes = (funcId: string) => {
-	funcId = ethers.utils.id(funcId);
-	return ethers.utils.arrayify(funcId.substr(0, 10));
-}
-
-const strToHex = (text: string) => {
-	let msg = '';
-	for (var i = 0; i < text.length; i++) {
-		var s = text.charCodeAt(i).toString(16);
-		while (s.length < 2) {
-		  s = '0' + s;
-		}
-		msg += s;
-	  }
-
-	return '0x' + msg;
-}
-
-const getXPercentFrom = (number: BigNumber, percent: number) => {
-	return number.div(BigNumber.from('100')).mul(BigNumber.from(percent.toString()));
-}
-
+const REFUNDER_VERSION = 1;
 
 describe("Refunder", function() {
 
@@ -48,6 +30,7 @@ describe("Refunder", function() {
 
   	let greeter: Contract;
 	let refunder: Contract;
+	let registry: Contract;
 
 	const greeterInitGreet = 'Hello, world!';
 
@@ -58,10 +41,16 @@ describe("Refunder", function() {
 		greeter = await Greeter.deploy(greeterInitGreet);
 		await greeter.deployed();
 
+		const Registry = await ethers.getContractFactory("Registry");
+		registry = await Registry.deploy();
+		await registry.deployed();
+
 		const Refunder = await ethers.getContractFactory("Refunder");
 		refunder = await Refunder.deploy();
 		await refunder.deployed();
 		await refunder.init(owner.address);
+
+		await registry.register(refunder.address, REFUNDER_VERSION);
 	})
 
 	describe('Sending ETHs', () => {
@@ -174,11 +163,11 @@ describe("Refunder", function() {
 			const resBefore = await refunder.refundables(randomAddress, randomFuncIdAsBytes); 
 			expect(resBefore).to.be.eq(false);
 
-			const res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, true);
+			const res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, true, registry.address);
 			let txReceipt = await res.wait();
 
 			expect(txReceipt.events, 'No events are emitted').to.be.ok;
-			expect(txReceipt.events[0].event, 'Invalid event name').to.be.eq('RefundableUpdate');
+			expect(txReceipt.events[1].event, 'Invalid event name').to.be.eq('RefundableUpdate');
 
 			const resAfter = await refunder.refundables(randomAddress, randomFuncIdAsBytes); 
 			expect(resAfter).to.be.eq(true);
@@ -193,13 +182,13 @@ describe("Refunder", function() {
 			const resBefore = await refunder.refundables(randomAddress, randomFuncIdAsBytes); 
 			expect(resBefore).to.be.eq(false);
 
-			let res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, true);
+			let res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, true, registry.address);
 			await res.wait();
 
 			const resAfter = await refunder.refundables(randomAddress, randomFuncIdAsBytes); 
 			expect(resAfter).to.be.eq(true);
 
-			res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, false);
+			res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, false, registry.address);
 			await res.wait();
 
 			const resAfterEdit = await refunder.refundables(randomAddress, randomFuncIdAsBytes); 
@@ -210,19 +199,19 @@ describe("Refunder", function() {
 		
 			const randomAddress = greeter.address;
 			const randomFuncId = ethers.utils.id('setGreeting(string)');
-			const randomFuncIdAsBytes = ethers.utils.arrayify(randomFuncId.substr(0, 10))
+			const randomFuncIdAsBytes = ethers.utils.arrayify(randomFuncId.substr(0, 10));
 
-			await expect(refunder.connect(addr1).updateRefundable(randomAddress, randomFuncIdAsBytes, true)).to.be.revertedWith(NOT_AN_OWNER);
+			await expect(refunder.connect(addr1).updateRefundable(randomAddress, randomFuncIdAsBytes, true, registry.address)).to.be.revertedWith(NOT_AN_OWNER);
 		});
 
 		it("Not owner should NOT be able to edit refundable", async function() {
 			const randomAddress = greeter.address;
 			const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
 
-			let res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, true);
+			let res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, true, registry.address);
 			await res.wait();
 
-			await expect(refunder.connect(addr1).updateRefundable(randomAddress, randomFuncIdAsBytes, false)).to.be.revertedWith(NOT_AN_OWNER);
+			await expect(refunder.connect(addr1).updateRefundable(randomAddress, randomFuncIdAsBytes, false, registry.address)).to.be.revertedWith(NOT_AN_OWNER);
 		});
 	});
 
@@ -245,7 +234,7 @@ describe("Refunder", function() {
 
 			const funcIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
 			
-			let res = await refunder.updateRefundable(greeter.address, funcIdAsBytes, true);
+			let res = await refunder.updateRefundable(greeter.address, funcIdAsBytes, true, registry.address);
 			await res.wait();
 
 			const testUser = addr1;
@@ -283,7 +272,7 @@ describe("Refunder", function() {
 
 			const funcIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
 			
-			let res = await refunder.updateRefundable(greeter.address, funcIdAsBytes, true);
+			let res = await refunder.updateRefundable(greeter.address, funcIdAsBytes, true, registry.address);
 			await res.wait();
 
 			const balanceBefore = await ethers.provider.getBalance(addr1.address);
@@ -319,7 +308,7 @@ describe("Refunder", function() {
 			let temp = await refunder.setMaxGasPrice('2000000000000')
 			await temp.wait();
 			
-			let res = await refunder.updateRefundable(greeter.address, funcIdAsBytes, true);
+			let res = await refunder.updateRefundable(greeter.address, funcIdAsBytes, true, registry.address);
 			await res.wait();
 
 			const text = 'Hello, Tester!';

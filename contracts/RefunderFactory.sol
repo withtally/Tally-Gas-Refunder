@@ -37,8 +37,4 @@ contract RefunderFactory {
 
         return newRefunder;
     }
-
-    function setRegistry(address registry_) external {
-        _registry = registry_;
-    }
 }

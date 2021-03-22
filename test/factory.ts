@@ -6,7 +6,7 @@ import { expect } from "chai";
 
 const REFUNDER_VERSION = 1;
 
-describe('Factory', () => {
+describe.only('Factory', () => {
     let masterRefunder: Contract;
     let factory: Contract;
 
@@ -49,5 +49,6 @@ describe('Factory', () => {
         const newRefunderOwnerFromContract = await newRefunder.owner();
         
         expect(newRefunderOwnerFromContract).to.be.eq(notOwner.address);
+        expect(newRefunderOwnerFromContract).to.be.eq(newRefunderOwner);
     });
 });
