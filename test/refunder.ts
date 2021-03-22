@@ -323,30 +323,13 @@ describe("Refunder", function() {
 			const hexString = ethers.utils.formatBytes32String(text);
 			const args = ethers.utils.arrayify(hexString);
 			
+			let balanceBefore = await ethers.provider.getBalance(userAddress);
 			await expect(refunder.connect(addr1).relayAndRefund(greeter.address, funcIdAsBytes, args, {
 				gasPrice: '2000000000001'
 			})).to.be.revertedWith(TOO_EXPENSIVE_GAS_PRICE);
 
-			let balanceBefore: BigNumber = BigNumber.from(0);
-			try {
-				balanceBefore = await ethers.provider.getBalance(userAddress);
-				await refunder.connect(addr1).relayAndRefund(greeter.address, funcIdAsBytes, args, {
-					gasPrice: '2000000000001'
-				})
-			} catch (error) {
-				
-			}
-
 			const balanceAfter = await ethers.provider.getBalance(userAddress);
 
-			temp = await ethers.provider.getBlockNumber();
-			temp = await ethers.provider.getBlockWithTransactions(temp);
-			let txReceipt = await ethers.provider.getTransactionReceipt(temp.transactions[0].hash);
-			
-			const cost = temp.transactions[0].gasPrice.mul(txReceipt.cumulativeGasUsed);
-			
-			expect(balanceBefore.sub(cost), 'User was refunded').to.be.eq(balanceAfter);
-			
 			expect(balanceAfter.lt(balanceBefore), 'User was refunded').to.be.ok;
 		});
 	});
