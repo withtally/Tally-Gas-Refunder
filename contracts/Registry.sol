@@ -23,7 +23,7 @@ contract Registry is IRegistry {
     event UpdateRefundable(address indexed refunder, address indexed targetAddress, bytes4 indexed interfaceId, bool supported);
 
     modifier onlyRefunder() {
-        require(refunders.contains(msg.sender) && refunderVersion[msg.sender] > 0, "Refunder not found");
+        require(refunders.contains(msg.sender) && refunderVersion[msg.sender] > 0, "Refunder not a caller");
         _;
     }
 
@@ -38,40 +38,34 @@ contract Registry is IRegistry {
         }
     }
 
-    // add/remove from aggregated refundables ??? params: address targetAddress, bytes4 interfaceId
-    function unregister() external override onlyRefunder {
-        if (refunders.contains(msg.sender)) {
-            refunders.remove(msg.sender);
-            refunderVersion[msg.sender] = 0;
-
-            // aggregatedRefundables[targetAddress][interfaceId].remove(msg.sender);
-            
-            emit Unregister(msg.sender);
-        }
-    }
-
-    // Only refunder contract can call. Adds the refunder contract in the Address Set
-    // If support is true -> refunder is marked to refund target+identifier calls
-    // If support is false -> refunder is marked NOT to refund target+identifier calls
     function updateRefundable(address targetAddress, bytes4 interfaceId, bool supported) external override onlyRefunder {
         if (supported) {
             aggregatedRefundables[targetAddress][interfaceId].add(msg.sender);
-            emit UpdateRefundable(msg.sender, targetAddress, interfaceId, supported);
-            return;
+        } else {
+            aggregatedRefundables[targetAddress][interfaceId].remove(msg.sender);
         }
         
-        aggregatedRefundables[targetAddress][interfaceId].remove(msg.sender);
         emit UpdateRefundable(msg.sender, targetAddress, interfaceId, supported);
     }
 
-    function getRefunders() external view override returns (address[] memory) {
-        address[] memory result = new address[](refunders.length());
+    function getRefunderCountFor(address targetAddress, bytes4 interfaceId) external override view returns(uint256) {
+        return aggregatedRefundables[targetAddress][interfaceId].length();
+    }
 
-        for (uint256 i = 0; i < refunders.length(); i++) {
-            result[i] = refunders.at(i);
-        }
+    function getRefunderForAtIndex(address targetAddress, bytes4 interfaceId, uint256 index) external override view returns(address) {
+        require(index < aggregatedRefundables[targetAddress][interfaceId].length(), "Invalid refunder index");
 
-        return result;
+        return aggregatedRefundables[targetAddress][interfaceId].at(index);
+    }
+
+    function getRefunder(uint256 index) external view override returns (address) {
+        require(index < refunders.length(), 'Invalid refunder index');
+
+        return refunders.at(index);
+    }
+
+    function getRefundersCount() external view override returns (uint256) {
+        return refunders.length();
     }
 
     function refundersFor(address targetAddress, bytes4 interfaceId) external view returns(address[] memory) {
