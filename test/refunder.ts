@@ -51,7 +51,17 @@ describe("Refunder", function() {
 		await refunder.init(owner.address, registry.address);
 
 		await registry.register(refunder.address, REFUNDER_VERSION);
-	})
+	});
+
+	it('Owner should be the deployer', async () => {
+		let getOwner = await refunder.owner();
+		expect(getOwner, "Owner do not match").to.be.eq(owner.address);	
+	});
+
+	it('Registry should match', async () => {
+		let getRegistry = await refunder.registry();
+		expect(getRegistry, "Registry do not match").to.be.eq(registry.address);	
+	});
 
 	describe('Sending ETHs', () => {
 	

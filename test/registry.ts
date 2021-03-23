@@ -31,7 +31,6 @@ describe('Registry', () => {
         let MasterRefunder = await ethers.getContractFactory("Refunder");
 		masterRefunder = await MasterRefunder.deploy();
 		await masterRefunder.deployed();
-        await masterRefunder.init(owner.address, registry.address);
 
         const Factory = await ethers.getContractFactory("RefunderFactory");
 		factory = await Factory.deploy(registry.address);

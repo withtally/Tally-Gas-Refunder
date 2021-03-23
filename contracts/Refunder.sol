@@ -13,7 +13,7 @@ import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 contract Refunder is ReentrancyGuard, OwnableUpgradeable, PausableUpgradeable, IRefunder {
     using Address for address;
 
-    address _registry;
+    address public registry;
 
     uint256 public maxGasPrice = 0;
     uint256 BASE_REFUND_TX_COST = 21873;
@@ -69,7 +69,7 @@ contract Refunder is ReentrancyGuard, OwnableUpgradeable, PausableUpgradeable, I
             transferOwnership(owner_);
         }
 
-        _registry = registry_;
+        registry = registry_;
     }
 
     function withdraw(uint256 value) external override onlyOwner nonReentrant {
@@ -88,7 +88,7 @@ contract Refunder is ReentrancyGuard, OwnableUpgradeable, PausableUpgradeable, I
         bool isRefundable_
     ) external override onlyOwner nonReentrant {
         refundables[targetContract][interfaceId] = isRefundable_;
-        IRegistry(_registry).updateRefundable(targetContract, interfaceId, isRefundable_);
+        IRegistry(registry).updateRefundable(targetContract, interfaceId, isRefundable_);
 
         emit RefundableUpdate(targetContract, interfaceId, isRefundable_);
     }
