@@ -38,9 +38,6 @@ contract Registry is IRegistry {
         }
     }
 
-    // Only refunder contract can call. Adds the refunder contract in the Address Set
-    // If support is true -> refunder is marked to refund target+identifier calls
-    // If support is false -> refunder is marked NOT to refund target+identifier calls
     function updateRefundable(address targetAddress, bytes4 interfaceId, bool supported) external override onlyRefunder {
         if (supported) {
             aggregatedRefundables[targetAddress][interfaceId].add(msg.sender);
@@ -51,14 +48,14 @@ contract Registry is IRegistry {
         emit UpdateRefundable(msg.sender, targetAddress, interfaceId, supported);
     }
 
-    function getRefunders() external view override returns (address[] memory) {
-        address[] memory result = new address[](refunders.length());
+    function getRefunderCountFor(address targetAddress, bytes4 interfaceId) external override view returns(uint256) {
+        return aggregatedRefundables[targetAddress][interfaceId].length();
+    }
 
-        for (uint256 i = 0; i < refunders.length(); i++) {
-            result[i] = refunders.at(i);
-        }
+    function getRefunderForAtIndex(address targetAddress, bytes4 interfaceId, uint256 index) external override view returns(address) {
+        require(index < aggregatedRefundables[targetAddress][interfaceId].length(), "Invalid refunder index");
 
-        return result;
+        return aggregatedRefundables[targetAddress][interfaceId].at(index);
     }
 
     function getRefunder(uint256 index) external view override returns (address) {

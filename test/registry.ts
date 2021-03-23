@@ -46,10 +46,7 @@ describe('Registry', () => {
     });
 
     it('There should be no Refunder/s', async () => {
-        let res = await registry.getRefunders();
-        expect(res.length).to.be.eq(0);
-
-        res = await registry.getRefundersCount();
+        let res = await registry.getRefundersCount();
         expect(res).to.be.eq(0);
     });
 
@@ -59,17 +56,18 @@ describe('Registry', () => {
             let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION, registry.address);
             let txReceipt = await res.wait();
 
-            let resRefunders = await registry.getRefunders();
+            let resRefundersCount = await registry.getRefundersCount();
+            let refunderAt = await registry.getRefunder(i);
             
-            expect(resRefunders.length).to.be.eq(i + 1);
-            expect(resRefunders[i], "Invalid refunder address").to.be.eq(txReceipt.events[2].args.refunderAddress);
+            expect(resRefundersCount).to.be.eq(i + 1);
+            expect(refunderAt, "Invalid refunder address").to.be.eq(txReceipt.events[2].args.refunderAddress);
 
-            res = await registry.refunderVersion(resRefunders[i]);
+            res = await registry.refunderVersion(refunderAt);
             expect(res, "Invalid refunder version").to.be.eq(REFUNDER_VERSION);
 
-            let refunderAtIndex = await registry.getRefunder(resRefunders.length - 1);
+            let refunderAtIndex = await registry.getRefunder(resRefundersCount - 1);
             
-            expect(refunderAtIndex, "Invalid refunder at index").to.be.eq(resRefunders[resRefunders.length - 1]);
+            expect(refunderAtIndex, "Invalid refunder at index").to.be.eq(refunderAt);
         }
     });
 
