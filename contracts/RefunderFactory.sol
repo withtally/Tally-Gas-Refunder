@@ -23,13 +23,13 @@ contract RefunderFactory {
         _;
     }
 
-    function createRefunder(address _masterRefunder, uint8 version)
+    function createRefunder(address _masterRefunder, uint8 version, address registry)
         external
         hasRegistry
         returns (address)
     {
         address newRefunder = Clones.clone(_masterRefunder);
-        IRefunder(newRefunder).init(msg.sender);
+        IRefunder(newRefunder).init(msg.sender, registry);
 
         emit CreateRefunder(msg.sender, newRefunder);
 

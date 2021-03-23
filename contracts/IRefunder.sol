@@ -3,13 +3,12 @@
 pragma solidity ^0.7.4;
 
 interface IRefunder {
-    function init(address owner) external;
+    function init(address owner, address registry) external;
 
     function updateRefundable(
         address targetContract,
         bytes4 interfaceId,
-        bool isRefundable_,
-        address registry
+        bool isRefundable_
     ) external;
 
     function withdraw(uint256 amount) external;

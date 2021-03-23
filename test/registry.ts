@@ -22,16 +22,16 @@ describe('Registry', () => {
 	let notOwner: SignerWithAddress;
 
     beforeEach(async () => {
-        [owner, notOwner] = await ethers.getSigners(); 
-
-        let MasterRefunder = await ethers.getContractFactory("Refunder");
-		masterRefunder = await MasterRefunder.deploy();
-		await masterRefunder.deployed();
-        await masterRefunder.init(owner.address);
+        [owner, notOwner] = await ethers.getSigners();
 
         let Registry = await ethers.getContractFactory("Registry");
 		registry = await Registry.deploy();
         await registry.deployed();
+
+        let MasterRefunder = await ethers.getContractFactory("Refunder");
+		masterRefunder = await MasterRefunder.deploy();
+		await masterRefunder.deployed();
+        await masterRefunder.init(owner.address, registry.address);
 
         const Factory = await ethers.getContractFactory("RefunderFactory");
 		factory = await Factory.deploy(registry.address);
@@ -51,7 +51,7 @@ describe('Registry', () => {
     it(`There should be ${ randomNum } registered Refunder/s`, async () => {
 
         for(let i = 0; i < randomNum; i++) {
-            let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
+            let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION, registry.address);
             let txReceipt = await res.wait();
 
             res = await registry.getRefunders();
@@ -65,7 +65,7 @@ describe('Registry', () => {
     });
 
     it('Refunder should be successfully unregistered', async () => {
-        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
+        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION, registry.address);
         let txReceipt = await res.wait();
 
         const newRefunderAddress = txReceipt.events[2].args.refunderAddress;
@@ -91,13 +91,13 @@ describe('Registry', () => {
     it('Should get all refundables for target + funcId', async () => {
 
         for(let i = 0; i < randomNum; i++) {
-            let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
+            let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION, registry.address);
             let txReceipt = await res.wait();
 
             const newRefunderAddress = txReceipt.events[2].args.refunderAddress;
             const newRefunder = await ethers.getContractAt("Refunder", newRefunderAddress);
             const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
-            res = await newRefunder.connect(notOwner).updateRefundable(greeter.address, randomFuncIdAsBytes, true, registry.address);
+            res = await newRefunder.connect(notOwner).updateRefundable(greeter.address, randomFuncIdAsBytes, true);
             await res.wait();
 
             res = await registry.refundersFor(greeter.address, randomFuncIdAsBytes);
@@ -108,13 +108,13 @@ describe('Registry', () => {
     });
 
     it('Successfully update refundable', async () => {
-        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
+        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION, registry.address);
         let txReceipt = await res.wait();
 
         const newRefunderAddress = txReceipt.events[2].args.refunderAddress;
         const newRefunder = await ethers.getContractAt("Refunder", newRefunderAddress);
         const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
-        res = await newRefunder.connect(notOwner).updateRefundable(greeter.address, randomFuncIdAsBytes, true, registry.address);
+        res = await newRefunder.connect(notOwner).updateRefundable(greeter.address, randomFuncIdAsBytes, true);
         await res.wait();
 
         res = await registry.refundersFor(greeter.address, randomFuncIdAsBytes);
@@ -122,7 +122,7 @@ describe('Registry', () => {
         expect(res.length).to.be.eq(1);
         expect(newRefunderAddress).to.be.eq(res[0]);
 
-        res = await newRefunder.connect(notOwner).updateRefundable(greeter.address, randomFuncIdAsBytes, false, registry.address);
+        res = await newRefunder.connect(notOwner).updateRefundable(greeter.address, randomFuncIdAsBytes, false);
         await res.wait();
 
         res = await registry.refundersFor(greeter.address, randomFuncIdAsBytes);

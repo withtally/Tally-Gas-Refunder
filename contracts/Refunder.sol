@@ -13,9 +13,11 @@ import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 contract Refunder is ReentrancyGuard, OwnableUpgradeable, PausableUpgradeable, IRefunder {
     using Address for address;
 
+    address _registry;
+
     uint256 public maxGasPrice = 0;
-    uint256 BASE_REFUND_TX_COST = 20491;
-    uint256 REFUND_OP_GAS_COST = 7662;
+    uint256 BASE_REFUND_TX_COST = 21873;
+    uint256 REFUND_OP_GAS_COST = 5106;
 
     event Deposit(address indexed depositor, uint256 value);
     event Withdraw(address indexed owner, uint256 value);
@@ -61,11 +63,13 @@ contract Refunder is ReentrancyGuard, OwnableUpgradeable, PausableUpgradeable, I
         emit Deposit(msg.sender, msg.value);
     }
 
-    function init(address owner_) external override initializer {
+    function init(address owner_, address registry_) external override initializer {
         __Ownable_init();
         if (owner() != owner_) {
             transferOwnership(owner_);
         }
+
+        _registry = registry_;
     }
 
     function withdraw(uint256 value) external override onlyOwner nonReentrant {
@@ -81,11 +85,10 @@ contract Refunder is ReentrancyGuard, OwnableUpgradeable, PausableUpgradeable, I
     function updateRefundable(
         address targetContract,
         bytes4 interfaceId,
-        bool isRefundable_,
-        address registry
+        bool isRefundable_
     ) external override onlyOwner {
         refundables[targetContract][interfaceId] = isRefundable_;
-        IRegistry(registry).updateRefundable(targetContract, interfaceId, isRefundable_);
+        IRegistry(_registry).updateRefundable(targetContract, interfaceId, isRefundable_);
 
         emit RefundableUpdate(targetContract, interfaceId, isRefundable_);
     }
