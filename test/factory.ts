@@ -26,16 +26,10 @@ describe('Factory', () => {
         Refunder = await ethers.getContractFactory("Refunder");
 		masterRefunder = await Refunder.deploy();
 		await masterRefunder.deployed();
-        await masterRefunder.init(owner.address, registry.address);
 
         const Factory = await ethers.getContractFactory("RefunderFactory");
 		factory = await Factory.deploy(registry.address);
 		await factory.deployed();
-    });
-
-    it('Owner of Master Refunder should be deployer', async () => {
-        let masterRefunderOwner = await masterRefunder.owner();
-        expect(masterRefunderOwner).to.be.eq(owner.address, "Invalid master refunder owner");
     });
 
     it('Create Refunder', async () => {
