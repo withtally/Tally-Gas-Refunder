@@ -44,11 +44,10 @@ contract Registry is IRegistry {
     function updateRefundable(address targetAddress, bytes4 interfaceId, bool supported) external override onlyRefunder {
         if (supported) {
             aggregatedRefundables[targetAddress][interfaceId].add(msg.sender);
-            emit UpdateRefundable(msg.sender, targetAddress, interfaceId, supported);
-            return;
+        } else {
+            aggregatedRefundables[targetAddress][interfaceId].remove(msg.sender);
         }
         
-        aggregatedRefundables[targetAddress][interfaceId].remove(msg.sender);
         emit UpdateRefundable(msg.sender, targetAddress, interfaceId, supported);
     }
 
