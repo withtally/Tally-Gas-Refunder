@@ -16,7 +16,9 @@ contract Refunder is ReentrancyGuard, OwnableUpgradeable, PausableUpgradeable, I
     address public registry;
 
     uint256 public maxGasPrice = 0;
+    // base 21_000 + 128 (8 non_zero_identifier_bytes) + 96 (24 zero_identifier_bytes) + 649 (gas costs until gasProvided variable)
     uint256 BASE_REFUND_TX_COST = 21873;
+    // gascost for executing refund internal function
     uint256 REFUND_OP_GAS_COST = 5106;
 
     event Deposit(address indexed depositor, uint256 value);
