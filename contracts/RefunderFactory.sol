@@ -7,7 +7,7 @@ import "./IRefunder.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
 contract RefunderFactory {
-    address _registry;
+    address public registry;
 
     event CreateRefunder(
         address indexed owner,
@@ -15,25 +15,19 @@ contract RefunderFactory {
     );
 
     constructor(address registry_) {
-        _registry = registry_;
+        registry = registry_;
     }
 
-    modifier hasRegistry {
-        require(_registry != address(0), "Registry is not set");
-        _;
-    }
-
-    function createRefunder(address _masterRefunder, uint8 version)
+    function createRefunder(address _masterRefunder, uint8 version, address registry_)
         external
-        hasRegistry
         returns (address)
     {
         address newRefunder = Clones.clone(_masterRefunder);
-        IRefunder(newRefunder).init(msg.sender);
+        IRefunder(newRefunder).init(msg.sender, registry_);
 
         emit CreateRefunder(msg.sender, newRefunder);
 
-        IRegistry(_registry).register(newRefunder, version);
+        IRegistry(registry).register(newRefunder, version);
 
         return newRefunder;
     }

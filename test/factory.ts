@@ -9,6 +9,7 @@ const REFUNDER_VERSION = 1;
 describe('Factory', () => {
     let masterRefunder: Contract;
     let factory: Contract;
+    let registry: Contract;
 
     let owner: SignerWithAddress;
 	let notOwner: SignerWithAddress;
@@ -18,27 +19,21 @@ describe('Factory', () => {
     beforeEach(async () => {
         [owner, notOwner] = await ethers.getSigners(); 
 
+        let Registry = await ethers.getContractFactory("Registry");
+        registry = await Registry.deploy();
+        await registry.deployed();
+
         Refunder = await ethers.getContractFactory("Refunder");
 		masterRefunder = await Refunder.deploy();
 		await masterRefunder.deployed();
-        await masterRefunder.init(owner.address);
-
-        let Registry = await ethers.getContractFactory("Registry");
-		let registry = await Registry.deploy();
-        await registry.deployed();
 
         const Factory = await ethers.getContractFactory("RefunderFactory");
 		factory = await Factory.deploy(registry.address);
 		await factory.deployed();
     });
 
-    it('Owner of Master Refunder should be deployer', async () => {
-        let masterRefunderOwner = await masterRefunder.owner();
-        expect(masterRefunderOwner).to.be.eq(owner.address, "Invalid master refunder owner");
-    });
-
     it('Create Refunder', async () => {
-        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
+        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION, registry.address);
         let txReceipt = await res.wait();
 
         const createRefunderEventIndex = 2;
@@ -50,5 +45,10 @@ describe('Factory', () => {
         
         expect(newRefunderOwnerFromContract).to.be.eq(notOwner.address);
         expect(newRefunderOwnerFromContract).to.be.eq(newRefunderOwner);
+    });
+
+    it(`Factory's registry should match`, async () => {
+        let res = await factory.registry();
+        expect(res, 'Registry not match').to.be.eq(registry.address);
     });
 });
