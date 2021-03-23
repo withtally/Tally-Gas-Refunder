@@ -106,4 +106,26 @@ describe('Registry', () => {
             expect(newRefunderAddress).to.be.eq(res[res.length - 1]);
         }
     });
+
+    it('Successfully update refundable', async () => {
+        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
+        let txReceipt = await res.wait();
+
+        const newRefunderAddress = txReceipt.events[2].args.refunderAddress;
+        const newRefunder = await ethers.getContractAt("Refunder", newRefunderAddress);
+        const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
+        res = await newRefunder.connect(notOwner).updateRefundable(greeter.address, randomFuncIdAsBytes, true, registry.address);
+        await res.wait();
+
+        res = await registry.refundersFor(greeter.address, randomFuncIdAsBytes);
+
+        expect(res.length).to.be.eq(1);
+        expect(newRefunderAddress).to.be.eq(res[0]);
+
+        res = await newRefunder.connect(notOwner).updateRefundable(greeter.address, randomFuncIdAsBytes, false, registry.address);
+        await res.wait();
+
+        res = await registry.refundersFor(greeter.address, randomFuncIdAsBytes);
+        expect(res.length).to.be.eq(0);
+    });
 });
