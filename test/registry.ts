@@ -64,20 +64,6 @@ describe('Registry', () => {
         }
     });
 
-    it('Refunder should be successfully unregistered', async () => {
-        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION, registry.address);
-        let txReceipt = await res.wait();
-
-        const newRefunderAddress = txReceipt.events[2].args.refunderAddress;
-
-        const newRefunder = await ethers.getContractAt("Refunder", newRefunderAddress);
-        res = await newRefunder.connect(notOwner).unregister(registry.address);
-        res.wait();
-
-        res = await registry.getRefunders();
-        expect(res.length).to.be.eq(0);
-    });
-
     it('Should be 0 refundables', async () => {
 
         const randomFuncId = ethers.utils.id('setGreeting(string)');

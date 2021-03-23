@@ -128,8 +128,4 @@ contract Refunder is ReentrancyGuard, OwnableUpgradeable, PausableUpgradeable, I
     function unpause() external onlyOwner {
         _unpause();
     }
-
-    function unregister(address registry_) external onlyOwner {
-        IRegistry(registry_).unregister();
-    }
 }
