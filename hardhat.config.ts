@@ -17,7 +17,12 @@ export default {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
-    }
+    },
+    // YOUR CONFIGURATION
+    // ropsten: {
+    //   url: 'URL that points to a JSON-RPC node',
+    //   accounts: [ 'YOUR_PRIVATE_KEY' ]
+    // }
   },
 
   mocha: {
