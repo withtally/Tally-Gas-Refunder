@@ -9,7 +9,8 @@ import {
 } from './utils/utils';
 
 import {
-    REFUNDER_NOT_A_CALLER
+    REFUNDER_NOT_A_CALLER,
+    INVALID_REFUNDER_INDEX
 } from './constants/error-messages.json';
 
 const REFUNDER_VERSION = 1;
@@ -132,5 +133,41 @@ describe('Registry', () => {
         await res.wait();
 
         await expect(registry.updateRefundable(greeter.address, randomFuncIdAsBytes, false)).to.be.revertedWith(REFUNDER_NOT_A_CALLER);
+    });
+
+    it('Should get Refunder count for correct', async () => {
+        
+        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION, registry.address);
+        let txReceipt = await res.wait();
+
+        const newRefunderAddress = txReceipt.events[2].args.refunderAddress;
+        const newRefunder = await ethers.getContractAt("Refunder", newRefunderAddress);
+        const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
+
+        let getRefunderCountFor = await registry.getRefunderCountFor(greeter.address, randomFuncIdAsBytes);
+        expect(getRefunderCountFor, "Invalid count for refunder for").to.be.eq(0);
+
+        res = await newRefunder.connect(notOwner).updateRefundable(greeter.address, randomFuncIdAsBytes, true);
+        await res.wait();
+
+        getRefunderCountFor = await registry.getRefunderCountFor(greeter.address, randomFuncIdAsBytes);
+        expect(getRefunderCountFor, "Invalid count for refunder for").to.be.eq(1);
+    });
+
+    it('Should get refunder for at index', async () => {
+        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION, registry.address);
+        let txReceipt = await res.wait();
+
+        const newRefunderAddress = txReceipt.events[2].args.refunderAddress;
+        const newRefunder = await ethers.getContractAt("Refunder", newRefunderAddress);
+        const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
+
+        await expect(registry.getRefunderForAtIndex(greeter.address, randomFuncIdAsBytes, 0)).to.be.revertedWith(INVALID_REFUNDER_INDEX);
+
+        res = await newRefunder.connect(notOwner).updateRefundable(greeter.address, randomFuncIdAsBytes, true);
+        await res.wait();
+
+        let getRefunderForAtIndex = await registry.getRefunderForAtIndex(greeter.address, randomFuncIdAsBytes, 0);
+        expect(getRefunderForAtIndex, "Refunder at index is invalid").to.be.eq(newRefunderAddress);
     });
 });
