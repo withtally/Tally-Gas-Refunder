@@ -61,6 +61,16 @@ contract Registry is IRegistry {
         return result;
     }
 
+    function getRefunder(uint256 index) external view override returns (address) {
+        require(index < refunders.length(), 'Invalid refunder index');
+
+        return refunders.at(index);
+    }
+
+    function getRefundersCount() external view override returns (uint256) {
+        return refunders.length();
+    }
+
     function refundersFor(address targetAddress, bytes4 interfaceId) external view returns(address[] memory) {
         address[] memory result = new address[](aggregatedRefundables[targetAddress][interfaceId].length());
 
