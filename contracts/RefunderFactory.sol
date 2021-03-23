@@ -18,14 +18,8 @@ contract RefunderFactory {
         registry = registry_;
     }
 
-    modifier hasRegistry {
-        require(registry != address(0), "Registry is not set");
-        _;
-    }
-
     function createRefunder(address _masterRefunder, uint8 version, address registry_)
         external
-        hasRegistry
         returns (address)
     {
         address newRefunder = Clones.clone(_masterRefunder);
