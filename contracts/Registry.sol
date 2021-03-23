@@ -38,18 +38,6 @@ contract Registry is IRegistry {
         }
     }
 
-    // add/remove from aggregated refundables ??? params: address targetAddress, bytes4 interfaceId
-    function unregister() external override onlyRefunder {
-        if (refunders.contains(msg.sender)) {
-            refunders.remove(msg.sender);
-            refunderVersion[msg.sender] = 0;
-
-            // aggregatedRefundables[targetAddress][interfaceId].remove(msg.sender);
-            
-            emit Unregister(msg.sender);
-        }
-    }
-
     // Only refunder contract can call. Adds the refunder contract in the Address Set
     // If support is true -> refunder is marked to refund target+identifier calls
     // If support is false -> refunder is marked NOT to refund target+identifier calls
