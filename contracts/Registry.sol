@@ -23,7 +23,7 @@ contract Registry is IRegistry {
     event UpdateRefundable(address indexed refunder, address indexed targetAddress, bytes4 indexed interfaceId, bool supported);
 
     modifier onlyRefunder() {
-        require(refunders.contains(msg.sender) && refunderVersion[msg.sender] > 0, "Refunder not found");
+        require(refunders.contains(msg.sender) && refunderVersion[msg.sender] > 0, "Refunder not a caller");
         _;
     }
 

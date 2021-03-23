@@ -8,6 +8,10 @@ import {
     getRandomNum
 } from './utils/utils';
 
+import {
+    REFUNDER_NOT_A_CALLER
+} from './constants/error-messages.json';
+
 const REFUNDER_VERSION = 1;
 
 const randomNum = getRandomNum();
@@ -117,5 +121,18 @@ describe('Registry', () => {
 
         res = await registry.refundersFor(greeter.address, randomFuncIdAsBytes);
         expect(res.length).to.be.eq(0);
+    });
+
+    it('Not refunder should NOT be able to call updateRefundable', async () => {
+        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION, registry.address);
+        let txReceipt = await res.wait();
+
+        const newRefunderAddress = txReceipt.events[2].args.refunderAddress;
+        const newRefunder = await ethers.getContractAt("Refunder", newRefunderAddress);
+        const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
+        res = await newRefunder.connect(notOwner).updateRefundable(greeter.address, randomFuncIdAsBytes, true);
+        await res.wait();
+
+        await expect(registry.updateRefundable(greeter.address, randomFuncIdAsBytes, false)).to.be.revertedWith(REFUNDER_NOT_A_CALLER);
     });
 });
