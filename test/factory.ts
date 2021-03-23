@@ -20,7 +20,7 @@ describe('Factory', () => {
         [owner, notOwner] = await ethers.getSigners(); 
 
         let Registry = await ethers.getContractFactory("Registry");
-		registry = await Registry.deploy();
+        registry = await Registry.deploy();
         await registry.deployed();
 
         Refunder = await ethers.getContractFactory("Refunder");
@@ -45,5 +45,10 @@ describe('Factory', () => {
         
         expect(newRefunderOwnerFromContract).to.be.eq(notOwner.address);
         expect(newRefunderOwnerFromContract).to.be.eq(newRefunderOwner);
+    });
+
+    it(`Factory's registry should match`, async () => {
+        let res = await factory.registry();
+        expect(res, 'Registry not match').to.be.eq(registry.address);
     });
 });
