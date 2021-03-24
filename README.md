@@ -99,3 +99,8 @@ contract Registry {
     // function updateRefundable(address target, bytes4 identifier, bool support)
 }
 ```
+
+### Compile
+
+### Test
+### Deploy
