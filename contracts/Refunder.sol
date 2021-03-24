@@ -3,17 +3,23 @@
 pragma solidity ^0.7.4;
 
 import "./IRefunder.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/utils/Pausable.sol";
+import "./IRegistry.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract Refunder is ReentrancyGuard, Ownable, Pausable, IRefunder {
+import { Address } from "@openzeppelin/contracts/utils/Address.sol";
+
+contract Refunder is ReentrancyGuard, OwnableUpgradeable, PausableUpgradeable, IRefunder {
     using Address for address;
 
+    address public registry;
+
     uint256 public maxGasPrice = 0;
-    uint256 BASE_REFUND_TX_COST = 20491;
-    uint256 REFUND_OP_GAS_COST = 7662;
+    // base 21_000 + 128 (8 non_zero_identifier_bytes) + 96 (24 zero_identifier_bytes) + 649 (gas costs until gasProvided variable)
+    uint256 BASE_REFUND_TX_COST = 21873;
+    // gascost for executing refund internal function
+    uint256 REFUND_OP_GAS_COST = 5106;
 
     event Deposit(address indexed depositor, uint256 value);
     event Withdraw(address indexed owner, uint256 value);
@@ -59,6 +65,15 @@ contract Refunder is ReentrancyGuard, Ownable, Pausable, IRefunder {
         emit Deposit(msg.sender, msg.value);
     }
 
+    function init(address owner_, address registry_) external override initializer {
+        __Ownable_init();
+        if (owner() != owner_) {
+            transferOwnership(owner_);
+        }
+
+        registry = registry_;
+    }
+
     function withdraw(uint256 value) external override onlyOwner nonReentrant {
         address payable payableAddrSender = payable(msg.sender);
         Address.sendValue(payableAddrSender, value);
@@ -73,8 +88,10 @@ contract Refunder is ReentrancyGuard, Ownable, Pausable, IRefunder {
         address targetContract,
         bytes4 interfaceId,
         bool isRefundable_
-    ) external override onlyOwner {
+    ) external override onlyOwner nonReentrant {
         refundables[targetContract][interfaceId] = isRefundable_;
+        IRegistry(registry).updateRefundable(targetContract, interfaceId, isRefundable_);
+
         emit RefundableUpdate(targetContract, interfaceId, isRefundable_);
     }
 

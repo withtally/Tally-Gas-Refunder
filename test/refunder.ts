@@ -14,32 +14,14 @@ import {
 	FUNC_CALL_NOT_SUCCESSFUL
 } from './constants/error-messages.json';
 
-const ethToWei = (ether: string) => {
-	return ethers.utils.parseEther(ether);
-}
+import {
+	 ethToWei,
+	generateFuncIdAsBytes,
+	getXPercentFrom,
+	strToHex
+} from './utils/utils';
 
-const generateFuncIdAsBytes = (funcId: string) => {
-	funcId = ethers.utils.id(funcId);
-	return ethers.utils.arrayify(funcId.substr(0, 10));
-}
-
-const strToHex = (text: string) => {
-	let msg = '';
-	for (var i = 0; i < text.length; i++) {
-		var s = text.charCodeAt(i).toString(16);
-		while (s.length < 2) {
-		  s = '0' + s;
-		}
-		msg += s;
-	  }
-
-	return '0x' + msg;
-}
-
-const getXPercentFrom = (number: BigNumber, percent: number) => {
-	return number.div(BigNumber.from('100')).mul(BigNumber.from(percent.toString()));
-}
-
+const REFUNDER_VERSION = 1;
 
 describe("Refunder", function() {
 
@@ -48,6 +30,7 @@ describe("Refunder", function() {
 
   	let greeter: Contract;
 	let refunder: Contract;
+	let registry: Contract;
 
 	const greeterInitGreet = 'Hello, world!';
 
@@ -58,10 +41,27 @@ describe("Refunder", function() {
 		greeter = await Greeter.deploy(greeterInitGreet);
 		await greeter.deployed();
 
+		const Registry = await ethers.getContractFactory("Registry");
+		registry = await Registry.deploy();
+		await registry.deployed();
+
 		const Refunder = await ethers.getContractFactory("Refunder");
 		refunder = await Refunder.deploy();
 		await refunder.deployed();
-	})
+		await refunder.init(owner.address, registry.address);
+
+		await registry.register(refunder.address, REFUNDER_VERSION);
+	});
+
+	it('Owner should be the deployer', async () => {
+		let getOwner = await refunder.owner();
+		expect(getOwner, "Owner do not match").to.be.eq(owner.address);	
+	});
+
+	it('Registry should match', async () => {
+		let getRegistry = await refunder.registry();
+		expect(getRegistry, "Registry do not match").to.be.eq(registry.address);	
+	});
 
 	describe('Sending ETHs', () => {
 	
@@ -94,6 +94,7 @@ describe("Refunder", function() {
 	});
 
 	describe('Withdraw ETHs', () => {
+
 		it("Owner should withdraw ETHs from Refunder", async function() {
 		
 			const value = ethToWei('2');
@@ -176,7 +177,7 @@ describe("Refunder", function() {
 			let txReceipt = await res.wait();
 
 			expect(txReceipt.events, 'No events are emitted').to.be.ok;
-			expect(txReceipt.events[0].event, 'Invalid event name').to.be.eq('RefundableUpdate');
+			expect(txReceipt.events[1].event, 'Invalid event name').to.be.eq('RefundableUpdate');
 
 			const resAfter = await refunder.refundables(randomAddress, randomFuncIdAsBytes); 
 			expect(resAfter).to.be.eq(true);
@@ -208,7 +209,7 @@ describe("Refunder", function() {
 		
 			const randomAddress = greeter.address;
 			const randomFuncId = ethers.utils.id('setGreeting(string)');
-			const randomFuncIdAsBytes = ethers.utils.arrayify(randomFuncId.substr(0, 10))
+			const randomFuncIdAsBytes = ethers.utils.arrayify(randomFuncId.substr(0, 10));
 
 			await expect(refunder.connect(addr1).updateRefundable(randomAddress, randomFuncIdAsBytes, true)).to.be.revertedWith(NOT_AN_OWNER);
 		});
@@ -270,8 +271,6 @@ describe("Refunder", function() {
 			expect(txReceipt.events[0].event, 'Invalid event name').to.be.eq('RelayAndRefund');
 
 			const difference = balanceBefore.sub(balanceAfter);
-			expect(difference.lt(BigNumber.from('200000000000')), `Account was not refunded or refunded too much. ${difference.toString()}`).to.be.ok; // 200 gwei
-
 			const percent = 5;
 			let percentFrom = getXPercentFrom(txCost, percent);
 			expect(difference.lt(percentFrom), `User was refunded less than ${100 - percent}%`);
