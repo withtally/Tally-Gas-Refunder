@@ -1,3 +1,7 @@
+
+![Compile](https://github.com/withtally/Tally-Gas-Refunder/workflows/Compile/badge.svg)
+![Test](https://github.com/LimeChain/withtally/Tally-Gas-Refunder/workflows/Test/badge.svg)
+
 # Tally Gas Refunder
 A generic contract system for reliably refunding the gas costs of transactions. The purpose of the project is to:
 - Enable Protocols to specify what contract calls they are willing to sponsor with a set of limitations (e.g gas price)
