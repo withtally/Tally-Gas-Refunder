@@ -100,7 +100,102 @@ contract Registry {
 }
 ```
 
+### HOW to?
+
+clone the repo
+```
+git clone https://github.com/withtally/Tally-Gas-Refunder.git
+```
+
+go into folder
+```
+cd Tally-Gas-Refunder
+```
+
+install project's dependencies
+```
+npm install
+```
+
 ### Compile
+compile smart contracts
+```
+npm run compile
+```
 
 ### Test
+run test
+```
+npm run test
+```
+
+### Coverage
+run code coverage
+```
+npm run coverage
+```
+
 ### Deploy
+
+Before starting with deployment you should configure the network and wallet where want to deploy.
+The configuration file is `hardhat.config.ts`. Default network is `hardhat`.
+```
+networks: {
+    hardhat: {
+    },
+    // YOUR CONFIGURATION
+    // ropsten: {
+    //   url: 'URL that points to a JSON-RPC node',
+    //   accounts: [ 'YOUR_PRIVATE_KEY' ]
+    // }
+  },
+```
+
+Deploy to your preferred network your command should look like this:
+```
+npm run deploy-xxxx --network MY_NETWORK_NAME
+```
+
+if you want already deployed `registry`, `factory`, or `master-copy refunder` you should place their address in `./scripts/config.json`
+```
+{
+    "REGISTRY_ADDRESS" : "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    "FACTORY_ADDRESS" : "0x9264ee2dB87BA0A5ED6a5Dc1790957829B8672a8",
+    "MASTER_REFUNDER_ADDRESS": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    "REFUNDER_VERSION" : 1
+}
+```
+
+deploying the contracts should be done in this order: 
+-- `registry`
+-- `factory`
+-- `master-refunder`
+-- `refunder`
+
+deploy a `registry`
+```
+npm run deploy-registry
+```
+-- after successful deployment on a terminal will be printed the address of deployed `registry`
+-- place this address into `./scripts/config.json`
+
+deploy a `registry`
+```
+npm run deploy-factory
+```
+-- after successful deployment on a terminal will be printed the address of deployed `factory`
+-- place this address into `./scripts/config.json`
+
+deploy a `master-refunder`: master-refunder
+```
+npm run deploy-master-refunder
+```
+-- after successful deployment on a terminal will be printed the address of deployed `master-refunder`
+-- place this address into `./scripts/config.json`
+
+deploy a `refunder`
+```
+npm run deploy-refunder
+```
+-- after successful deployment on a terminal will be printed the address of deployed `refunder`
+
