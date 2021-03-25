@@ -1,7 +1,7 @@
 import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-ethers";
-import "solidity-coverage"
+import "solidity-coverage";
 
 export default {
   solidity: {

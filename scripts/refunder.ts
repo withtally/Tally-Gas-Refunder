@@ -28,7 +28,7 @@ async function main() {
 	}
 
 	const factory = await ethers.getContractAt("RefunderFactory", FACTORY_ADDRESS);
-    let res = await factory.createRefunder(MASTER_REFUNDER_ADDRESS, REFUNDER_VERSION, REGISTRY_ADDRESS);
+    let res = await factory.createRefunder(MASTER_REFUNDER_ADDRESS, REFUNDER_VERSION);
 	let txReceipt = await res.wait();
 
 	const newRefunderAddress = txReceipt.events[2].args.refunderAddress;

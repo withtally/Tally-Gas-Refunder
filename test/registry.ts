@@ -54,7 +54,7 @@ describe('Registry', () => {
     it(`There should be ${ randomNum } registered Refunder/s`, async () => {
 
         for(let i = 0; i < randomNum; i++) {
-            let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION, registry.address);
+            let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
             let txReceipt = await res.wait();
 
             let resRefundersCount = await registry.getRefundersCount();
@@ -84,7 +84,7 @@ describe('Registry', () => {
     it('Should get all refundables for target + funcId', async () => {
 
         for(let i = 0; i < randomNum; i++) {
-            let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION, registry.address);
+            let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
             let txReceipt = await res.wait();
 
             const newRefunderAddress = txReceipt.events[2].args.refunderAddress;
@@ -101,7 +101,7 @@ describe('Registry', () => {
     });
 
     it('Successfully update refundable', async () => {
-        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION, registry.address);
+        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
         let txReceipt = await res.wait();
 
         const newRefunderAddress = txReceipt.events[2].args.refunderAddress;
@@ -123,7 +123,7 @@ describe('Registry', () => {
     });
 
     it('Not refunder should NOT be able to call updateRefundable', async () => {
-        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION, registry.address);
+        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
         let txReceipt = await res.wait();
 
         const newRefunderAddress = txReceipt.events[2].args.refunderAddress;
@@ -137,7 +137,7 @@ describe('Registry', () => {
 
     it('Should get Refunder count for correct', async () => {
         
-        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION, registry.address);
+        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
         let txReceipt = await res.wait();
 
         const newRefunderAddress = txReceipt.events[2].args.refunderAddress;
@@ -155,7 +155,7 @@ describe('Registry', () => {
     });
 
     it('Should get refunder for at index', async () => {
-        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION, registry.address);
+        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
         let txReceipt = await res.wait();
 
         const newRefunderAddress = txReceipt.events[2].args.refunderAddress;
