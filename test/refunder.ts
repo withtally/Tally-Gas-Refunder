@@ -334,25 +334,48 @@ describe("Refunder", function() {
 	});
 
 	describe('Pause/Unpause', () => {
+		const funcIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
+
+		const text = 'Hello, Tester!';
+		const hexString = ethers.utils.formatBytes32String(text);
+		const args = ethers.utils.arrayify(hexString);
+
+		beforeEach(async () => {
+			
+			let res = await owner.sendTransaction({
+				value: ethToWei("1"),
+				to: refunder.address
+			});
+
+			await res.wait();
+		});
+
 		it('Pause', async () => {
+			await prepareRefundable();
 
 			await refunder.pause();
 
-			const funcIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
-
-			await expect(refunder.updateRefundable(greeter.address, funcIdAsBytes, true)).to.be.revertedWith(PAUSED);
+			await expect(refunder.relayAndRefund(greeter.address, funcIdAsBytes, args)).to.be.revertedWith(PAUSED);
 		});
 
 		it('Unpause', async () => {
+			await prepareRefundable();
+
 			await refunder.pause();
 
-			const funcIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
-
-			await expect(refunder.updateRefundable(greeter.address, funcIdAsBytes, true)).to.be.revertedWith(PAUSED);
+			await expect(refunder.relayAndRefund(greeter.address, funcIdAsBytes, args)).to.be.revertedWith(PAUSED);
 
 			await refunder.unpause();
 
-			await refunder.updateRefundable(greeter.address, funcIdAsBytes, true);
+			await refunder.relayAndRefund(greeter.address, funcIdAsBytes, args);
 		});
+
+		async function prepareRefundable() {
+			let res = await refunder.setMaxGasPrice('150000000000'); // 150 gwei
+			await res.wait();
+
+			res = await refunder.updateRefundable(greeter.address, funcIdAsBytes, true);
+			await res.wait();
+		}
 	});
 });
