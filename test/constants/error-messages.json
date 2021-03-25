@@ -4,6 +4,7 @@
     "NOT_REFUNDABLE": "It's not refundable",
     "TOO_EXPENSIVE_GAS_PRICE": "Gas price is too expensive",
     "FUNC_CALL_NOT_SUCCESSFUL": "Function call not successful",
+    "PAUSED": "Pausable: paused",
     "REFUNDER_NOT_A_CALLER": "Refunder not a caller",
     "INVALID_REFUNDER_INDEX": "Invalid refunder index"
 }

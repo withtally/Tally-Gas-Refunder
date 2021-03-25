@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "compile": "npx hardhat compile",
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "coverage": "npx hardhat coverage"
   },
   "repository": {
     "type": "git",
@@ -27,6 +28,7 @@
     "ethereum-waffle": "^3.3.0",
     "ethers": "^5.0.32",
     "hardhat": "^2.1.1",
+    "solidity-coverage": "^0.7.16",
     "ts-node": "^9.1.1",
     "typescript": "^4.2.3"
   },

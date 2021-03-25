@@ -11,7 +11,8 @@ import {
 	NOT_AN_OWNER,
 	NOT_REFUNDABLE,
 	TOO_EXPENSIVE_GAS_PRICE,
-	FUNC_CALL_NOT_SUCCESSFUL
+	FUNC_CALL_NOT_SUCCESSFUL,
+	PAUSED
 } from './constants/error-messages.json';
 
 import {
@@ -312,7 +313,7 @@ describe("Refunder", function() {
 
 			const funcIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
 			
-			let temp = await refunder.setMaxGasPrice('2000000000000')
+			let temp = await refunder.setMaxGasPrice('2000000000')
 			await temp.wait();
 			
 			let res = await refunder.updateRefundable(greeter.address, funcIdAsBytes, true);
@@ -324,12 +325,57 @@ describe("Refunder", function() {
 			
 			let balanceBefore = await ethers.provider.getBalance(userAddress);
 			await expect(refunder.connect(addr1).relayAndRefund(greeter.address, funcIdAsBytes, args, {
-				gasPrice: '2000000000001'
+				gasPrice: '2000000001'
 			})).to.be.revertedWith(TOO_EXPENSIVE_GAS_PRICE);
 
 			const balanceAfter = await ethers.provider.getBalance(userAddress);
-
 			expect(balanceAfter.lt(balanceBefore), 'User was refunded').to.be.ok;
 		});
+	});
+
+	describe('Pause/Unpause', () => {
+		const funcIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
+
+		const text = 'Hello, Tester!';
+		const hexString = ethers.utils.formatBytes32String(text);
+		const args = ethers.utils.arrayify(hexString);
+
+		beforeEach(async () => {
+			
+			let res = await owner.sendTransaction({
+				value: ethToWei("1"),
+				to: refunder.address
+			});
+
+			await res.wait();
+		});
+
+		it('Pause', async () => {
+			await prepareRefundable();
+
+			await refunder.pause();
+
+			await expect(refunder.relayAndRefund(greeter.address, funcIdAsBytes, args)).to.be.revertedWith(PAUSED);
+		});
+
+		it('Unpause', async () => {
+			await prepareRefundable();
+
+			await refunder.pause();
+
+			await expect(refunder.relayAndRefund(greeter.address, funcIdAsBytes, args)).to.be.revertedWith(PAUSED);
+
+			await refunder.unpause();
+
+			await refunder.relayAndRefund(greeter.address, funcIdAsBytes, args);
+		});
+
+		async function prepareRefundable() {
+			let res = await refunder.setMaxGasPrice('150000000000'); // 150 gwei
+			await res.wait();
+
+			res = await refunder.updateRefundable(greeter.address, funcIdAsBytes, true);
+			await res.wait();
+		}
 	});
 });
