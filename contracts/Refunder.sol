@@ -88,7 +88,7 @@ contract Refunder is ReentrancyGuard, OwnableUpgradeable, PausableUpgradeable, I
         address targetContract,
         bytes4 interfaceId,
         bool isRefundable_
-    ) external override onlyOwner nonReentrant whenNotPaused{
+    ) external override onlyOwner nonReentrant {
         refundables[targetContract][interfaceId] = isRefundable_;
         IRegistry(registry).updateRefundable(targetContract, interfaceId, isRefundable_);
 
