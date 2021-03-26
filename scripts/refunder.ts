@@ -17,7 +17,7 @@ async function refunder(factoryAddress: string, masterRefunderAddress: string, r
 
 	const factory = await ethers.getContractAt("RefunderFactory", factoryAddress);
 
-    let res = await factory.createRefunder(masterRefunderAddress, refunderVersion);
+	let res = await factory.createRefunder(masterRefunderAddress, refunderVersion);
 	let txReceipt = await res.wait();
 
 	txReceipt.events.forEach((e: any) => {
