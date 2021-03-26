@@ -138,10 +138,14 @@ npm run coverage
 ### Deploy
 
 Before starting with deployment you should configure the network and wallet where want to deploy.
-The configuration file is `hardhat.config.ts`. Default network is `hardhat`.
+The configuration file is `hardhat.config.ts`. The default network is `hardhat`.
 ```
 networks: {
     hardhat: {
+    },
+    local: {
+		  url: 'http://127.0.0.1:8545',
+		  accounts: ['ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80']
     },
     // YOUR CONFIGURATION
     // ropsten: {
@@ -153,17 +157,7 @@ networks: {
 
 Deploy to your preferred network your command should look like this:
 ```
-npm run deploy-xxxx --network MY_NETWORK_NAME
-```
-
-if you want already deployed `registry`, `factory`, or `master-copy refunder` you should place their address in `./scripts/config.json`
-```
-{
-    "REGISTRY_ADDRESS" : "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-    "FACTORY_ADDRESS" : "0x9264ee2dB87BA0A5ED6a5Dc1790957829B8672a8",
-    "MASTER_REFUNDER_ADDRESS": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-    "REFUNDER_VERSION" : 1
-}
+npx hardhat deploy-xxxx --network MY_NETWORK_NAME
 ```
 
 deploying the contracts should be done in this order: 
@@ -172,30 +166,27 @@ deploying the contracts should be done in this order:
 -- `master-refunder`
 -- `refunder`
 
-deploy a `registry`
-```
-npm run deploy-registry
-```
--- after successful deployment on a terminal will be printed the address of deployed `registry`
--- place this address into `./scripts/config.json`
+after successfully deployed contract address would be printed on a terminal
 
 deploy a `registry`
 ```
-npm run deploy-factory
+npx hardhat deploy-registry [--network local]
 ```
--- after successful deployment on a terminal will be printed the address of deployed `factory`
--- place this address into `./scripts/config.json`
+
+deploy a `factory`
+registry's address is required!
+```
+npx hardhat deploy-factory --registry-address 0x0A841684F52754D0f2Cbddc89495c89A5A2B0064 [--network local]
+```
 
 deploy a `master-refunder`: master-refunder
 ```
-npm run deploy-master-refunder
+npx hardhat deploy-master-refunder [--network local]
 ```
--- after successful deployment on a terminal will be printed the address of deployed `master-refunder`
--- place this address into `./scripts/config.json`
 
 deploy a `refunder`
-```
-npm run deploy-refunder
-```
--- after successful deployment on a terminal will be printed the address of deployed `refunder`
+`--factory-address` and `--master-refunder-address` are required!
 
+```
+npx hardhat deploy-refunder --factory-address 0x5ff0d405726C65c82Ba97f4ADe8515838707778A --master-refunder-address 0x0ffbEA284a462a39999a5D1fD52db85F77594630 [--network ropsten]
+```

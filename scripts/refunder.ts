@@ -26,7 +26,7 @@ async function refunder(factoryAddress: string, masterRefunderAddress: string, r
 	} else {
 		console.log(`Tx hash:`, res.hash);
 	}
-	
+
 }
 
 export default refunder;
