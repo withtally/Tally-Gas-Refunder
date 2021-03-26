@@ -11,7 +11,8 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 
 /**
- *  @title Refunder - core contract for refunding arbitrary contract+indentifier calls between 96%-99% of the gas costs of the transaction
+ *  @title Refunder - core contract for refunding arbitrary contract+indentifier calls
+ *  between 96%-99% of the gas costs of the transaction
  */
 contract Refunder is
     ReentrancyGuard,
@@ -186,12 +187,12 @@ contract Refunder is
     }
 
     /// @notice Pauses refund operations of the contract
-    function pause() external onlyOwner {
+    function pause() external override onlyOwner {
         _pause();
     }
 
     /// @notice Unpauses the refund operations of the contract
-    function unpause() external onlyOwner {
+    function unpause() external override onlyOwner {
         _unpause();
     }
 }
