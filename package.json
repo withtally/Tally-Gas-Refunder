@@ -6,8 +6,7 @@
   "scripts": {
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
-    "coverage": "npx hardhat coverage",
-    "deploy-master-copy": "npx hardhat run ./scripts/master-copy.ts"
+    "coverage": "npx hardhat coverage"
   },
   "repository": {
     "type": "git",
