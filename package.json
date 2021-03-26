@@ -7,10 +7,7 @@
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
     "coverage": "npx hardhat coverage",
-    "deploy-master-copy": "npx hardhat run ./scripts/master-copy.ts",
-    "deploy-refunder": "npx hardhat run ./scripts/refunder.ts",
-    "deploy-registry": "npx hardhat run ./scripts/registry.ts",
-    "deploy-factory": "npx hardhat run ./scripts/factory.ts"
+    "deploy-master-copy": "npx hardhat run ./scripts/master-copy.ts"
   },
   "repository": {
     "type": "git",

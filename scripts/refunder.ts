@@ -2,43 +2,31 @@
 import hre from 'hardhat'
 const ethers = hre.ethers;
 
-import {
-	FACTORY_ADDRESS,
-	MASTER_REFUNDER_ADDRESS,
-	REFUNDER_VERSION,
-	REGISTRY_ADDRESS
-} from './config.json';
+async function refunder(factoryAddress: string, masterRefunderAddress: string, refunderVersion = 1) {
 
-async function main() {
+	// Compile our Contracts, just in case
+	await hre.run('compile');
 
-	if (!FACTORY_ADDRESS) {
-		throw Error('Missing FACTORY_ADDRESS');
+	if (!factoryAddress) {
+		throw Error('Missing FACTORY ADDRESS');
 	}
 
-	if (!MASTER_REFUNDER_ADDRESS) {
-		throw Error('Missing MASTER_REFUNDER_ADDRESS');
+	if (!masterRefunderAddress) {
+		throw Error('Missing MASTER REFUNDER ADDRESS');
 	}
 
-	if (!REFUNDER_VERSION) {
-		throw Error('Missing REFUNDER_VERSION');
-	}
+	const factory = await ethers.getContractAt("RefunderFactory", factoryAddress);
 
-	if (!REGISTRY_ADDRESS) {
-		throw Error('Missing REGISTRY_ADDRESS');
-	}
-
-	const factory = await ethers.getContractAt("RefunderFactory", FACTORY_ADDRESS);
-    let res = await factory.createRefunder(MASTER_REFUNDER_ADDRESS, REFUNDER_VERSION);
+    let res = await factory.createRefunder(masterRefunderAddress, refunderVersion);
 	let txReceipt = await res.wait();
-
-	const newRefunderAddress = txReceipt.events[2].args.refunderAddress;
-
-  	console.log("Refunder deployed to:", newRefunderAddress);
+	
+	if (txReceipt.events.length > 0) {
+		const newRefunderAddress = txReceipt.events[2].args.refunderAddress;
+  		console.log("Refunder deployed to:", newRefunderAddress);
+	} else {
+		console.log(`Tx hash:`, res.hash);
+	}
+	
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch(error => {
-    console.error(error);
-    process.exit(1);
-  });
+export default refunder;
