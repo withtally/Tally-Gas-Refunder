@@ -19,14 +19,12 @@ async function refunder(factoryAddress: string, masterRefunderAddress: string, r
 
     let res = await factory.createRefunder(masterRefunderAddress, refunderVersion);
 	let txReceipt = await res.wait();
-	
-	if (txReceipt.events.length > 0) {
-		const newRefunderAddress = txReceipt.events[2].args.refunderAddress;
-  		console.log("Refunder deployed to:", newRefunderAddress);
-	} else {
-		console.log(`Tx hash:`, res.hash);
-	}
 
+	txReceipt.events.forEach((e: any) => {
+		if (e.args && e.args.refunderAddress) {
+			console.log("Refunder deployed to:", e.args.refunderAddress);
+		}
+	});
 }
 
 export default refunder;

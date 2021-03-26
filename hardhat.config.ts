@@ -16,12 +16,12 @@ task("deploy-registry", "Deploys a Registry contract")
 	});
 
 task("deploy-factory", "Deploys a Refunder's Factory")
-	.addParam("registryAddress", "The address of refunders Registry")
+	.addParam("registry", "The address of refunders Registry")
 	.setAction(async taskArgs => {
 		
 		const factoryDeployer = await lazyImport('./scripts/factory');
 		
-		await factoryDeployer(taskArgs.registryAddress);
+		await factoryDeployer(taskArgs.registry);
 	});
 
 task("deploy-master-refunder", "Deploys a Master Refunder")
@@ -33,16 +33,16 @@ task("deploy-master-refunder", "Deploys a Master Refunder")
 	});
 
 task("deploy-refunder", "Deploys a Refunder")
-	.addParam("factoryAddress", "The address of refunders Factory")
-	.addParam("masterRefunderAddress", "The address of initial Refunder")
+	.addParam("factory", "The address of refunders Factory")
+	.addParam("masterRefunder", "The address of initial Refunder")
 	.addOptionalParam("refunderVersion", "Refunder's version. default is 1")
 	.setAction(async taskArgs => {
 		
 		const refunderDeployer = await lazyImport('./scripts/refunder');
 		
 		await refunderDeployer(
-			taskArgs.factoryAddress,
-			taskArgs.masterRefunderAddress,
+			taskArgs.factory,
+			taskArgs.masterRefunder,
 			taskArgs.refunderVersion
 		);
 	});
@@ -65,12 +65,7 @@ export default {
 	local: {
 		url: 'http://127.0.0.1:8545',
 		accounts: ['ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80']
-    },
-    // YOUR CONFIGURATION
-    // ropsten: {
-    //   url: 'URL that points to a JSON-RPC node',
-    //   accounts: [ 'YOUR_PRIVATE_KEY' ]
-    // }
+    }
   },
 
   mocha: {

@@ -12,37 +12,37 @@ describe('Factory', () => {
     let registry: Contract;
 
     let owner: SignerWithAddress;
-	let notOwner: SignerWithAddress;
+    let notOwner: SignerWithAddress;
 
     let Refunder: ContractFactory;
 
     beforeEach(async () => {
-        [owner, notOwner] = await ethers.getSigners(); 
+        [owner, notOwner] = await ethers.getSigners();
 
         let Registry = await ethers.getContractFactory("Registry");
         registry = await Registry.deploy();
         await registry.deployed();
 
         Refunder = await ethers.getContractFactory("Refunder");
-		masterRefunder = await Refunder.deploy();
-		await masterRefunder.deployed();
+        masterRefunder = await Refunder.deploy();
+        await masterRefunder.deployed();
 
         const Factory = await ethers.getContractFactory("RefunderFactory");
-		factory = await Factory.deploy(registry.address);
-		await factory.deployed();
+        factory = await Factory.deploy(registry.address);
+        await factory.deployed();
     });
 
     it('Create Refunder', async () => {
         let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
         let txReceipt = await res.wait();
 
-        const createRefunderEventIndex = 2;
+        const createRefunderEventIndex = 3;
         const newRefunderAddress = txReceipt.events[createRefunderEventIndex].args.refunderAddress;
         const newRefunderOwner = txReceipt.events[createRefunderEventIndex].args.owner;
-        
+
         const newRefunder = await ethers.getContractAt("Refunder", newRefunderAddress);
         const newRefunderOwnerFromContract = await newRefunder.owner();
-        
+
         expect(newRefunderOwnerFromContract).to.be.eq(notOwner.address);
         expect(newRefunderOwnerFromContract).to.be.eq(newRefunderOwner);
     });

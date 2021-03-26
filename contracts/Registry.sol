@@ -6,76 +6,145 @@ pragma solidity ^0.7.4;
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "./IRegistry.sol";
 
+/**
+ *  @title Registry contract storing information about all refunders deployed
+ *  Used for querying and reverse querying available refunders for a given target+identifier transaction
+ */
 contract Registry is IRegistry {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    // Map of refunders and their version, starting with 1
+    /// @notice mapping of refunders and their version. Version starts from 1
     mapping(address => uint8) public refunderVersion;
 
     // Tuple of target address + identifier corresponding to set of refunders
     mapping(address => mapping(bytes4 => EnumerableSet.AddressSet)) aggregatedRefundables;
 
-    // Set of refunders
     EnumerableSet.AddressSet private refunders;
 
+    /// @notice Register event emitted once new refunder is added to the registry
     event Register(address indexed refunder, uint8 version);
-    event Unregister(address indexed refunder);
-    event UpdateRefundable(address indexed refunder, address indexed targetAddress, bytes4 indexed interfaceId, bool supported);
 
+    /// @notice UpdateRefundable event emitted once a given refunder updates his supported refundable transactions
+    event UpdateRefundable(
+        address indexed refunder,
+        address indexed targetAddress,
+        bytes4 indexed interfaceId,
+        bool supported
+    );
+
+    /// @notice Modifier checking that the msg sender is a registered refunder
     modifier onlyRefunder() {
-        require(refunders.contains(msg.sender) && refunderVersion[msg.sender] > 0, "Refunder not a caller");
+        require(
+            refunders.contains(msg.sender) && refunderVersion[msg.sender] > 0,
+            "Refunder not a caller"
+        );
         _;
     }
 
+    /// @notice Register function for adding new refunder in the registry
+    /// @param refunder the address of the new refunder
+    /// @param version the version of the refunder
     function register(address refunder, uint8 version) external override {
         require(version != 0, "Version cannot be '0'");
 
         if (!refunders.contains(refunder)) {
             refunders.add(refunder);
             refunderVersion[refunder] = version;
-            
+
             emit Register(refunder, version);
         }
     }
 
-    function updateRefundable(address targetAddress, bytes4 interfaceId, bool supported) external override onlyRefunder {
+    /**
+     * @notice Updates the tuple with the supported target + identifier transactions. Can be called only by refunder contract
+     * @param target the target contract of the refundable transaction
+     * @param identifier the function identifier of the refundable transaction
+     * @param supported boolean property indicating whether the specified transaction is refundable or not
+     */
+    function updateRefundable(
+        address target,
+        bytes4 identifier,
+        bool supported
+    ) external override onlyRefunder {
         if (supported) {
-            aggregatedRefundables[targetAddress][interfaceId].add(msg.sender);
+            aggregatedRefundables[target][identifier].add(msg.sender);
         } else {
-            aggregatedRefundables[targetAddress][interfaceId].remove(msg.sender);
+            aggregatedRefundables[target][identifier].remove(msg.sender);
         }
-        
-        emit UpdateRefundable(msg.sender, targetAddress, interfaceId, supported);
+
+        emit UpdateRefundable(msg.sender, target, identifier, supported);
     }
 
-    function getRefunderCountFor(address targetAddress, bytes4 interfaceId) external override view returns(uint256) {
-        return aggregatedRefundables[targetAddress][interfaceId].length();
+    /**
+     * @notice Get function returning the number of refunders for the specified target + identifier transaction
+     * @param target the target contract of the refundable transaction
+     * @param identifier the function identifier of the refundable transaction
+     */
+    function getRefunderCountFor(address target, bytes4 identifier)
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return aggregatedRefundables[target][identifier].length();
     }
 
-    function getRefunderForAtIndex(address targetAddress, bytes4 interfaceId, uint256 index) external override view returns(address) {
-        require(index < aggregatedRefundables[targetAddress][interfaceId].length(), "Invalid refunder index");
+    /**
+     * @notice Returns the refunder address for a given combination of target + identifier transaction at the specified index
+     * @param target the target contract of the refundable transaction
+     * @param identifier the function identifier of the refundable transaction
+     * @param index the index of the refunder in the set of refunders
+     */
+    function getRefunderForAtIndex(
+        address target,
+        bytes4 identifier,
+        uint256 index
+    ) external view override returns (address) {
+        require(
+            index < aggregatedRefundables[target][identifier].length(),
+            "Invalid refunder index"
+        );
 
-        return aggregatedRefundables[targetAddress][interfaceId].at(index);
+        return aggregatedRefundables[target][identifier].at(index);
     }
 
-    function getRefunder(uint256 index) external view override returns (address) {
-        require(index < refunders.length(), 'Invalid refunder index');
+    /**
+     * @notice Returns the refunder address by index
+     * @param index the index of the refunder in the set of refunders
+     */
+    function getRefunder(uint256 index)
+        external
+        view
+        override
+        returns (address)
+    {
+        require(index < refunders.length(), "Invalid refunder index");
 
         return refunders.at(index);
     }
 
+    /// @notice Returns the count of all unique refunders
     function getRefundersCount() external view override returns (uint256) {
         return refunders.length();
     }
 
-    function refundersFor(address targetAddress, bytes4 interfaceId) external view returns(address[] memory) {
-        address[] memory result = new address[](aggregatedRefundables[targetAddress][interfaceId].length());
+    /**
+     * @notice Returns all refunders that support refunding of target+identifier transactions
+     * @param target the target contract of the refundable transaction
+     * @param identifier the function identifier of the refundable transaction
+     */
+    function refundersFor(address target, bytes4 identifier)
+        external
+        view
+        returns (address[] memory)
+    {
+        uint256 n = aggregatedRefundables[target][identifier].length();
+        address[] memory result = new address[](n);
 
-        for (uint256 i = 0; i < aggregatedRefundables[targetAddress][interfaceId].length(); i++) {
-            result[i] = aggregatedRefundables[targetAddress][interfaceId].at(i);
+        for (uint256 i = 0; i < n; i++) {
+            result[i] = aggregatedRefundables[target][identifier].at(i);
         }
 
         return result;
     }
-
 }
