@@ -18,12 +18,12 @@ contract RefunderFactory {
         registry = registry_;
     }
 
-    function createRefunder(address _masterRefunder, uint8 version, address registry_)
+    function createRefunder(address _masterRefunder, uint8 version)
         external
         returns (address)
     {
         address newRefunder = Clones.clone(_masterRefunder);
-        IRefunder(newRefunder).init(msg.sender, registry_);
+        IRefunder(newRefunder).init(msg.sender, registry);
 
         emit CreateRefunder(msg.sender, newRefunder);
 

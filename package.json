@@ -6,11 +6,7 @@
   "scripts": {
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
-    "coverage": "npx hardhat coverage",
-    "deploy-refunder": "passParams() { _network=\"hardhat\";  if [ ! -z \"$1\" ]; then _network=$1; fi; npx hardhat run ./scripts/refunder.ts --network $_network; }; passParams",
-    "deploy-master-refunder": "passParams() { _network=\"hardhat\";  if [ ! -z \"$1\" ]; then _network=$1; fi; npx hardhat run ./scripts/master-refunder.ts --network $_network; }; passParams",
-    "deploy-registry": "passParams() { _network=\"hardhat\";  if [ ! -z \"$1\" ]; then _network=$1; fi; npx hardhat run ./scripts/registry.ts --network $_network; }; passParams",
-    "deploy-factory": "passParams() { _network=\"hardhat\";  if [ ! -z \"$1\" ]; then _network=$1; fi; npx hardhat run ./scripts/factory.ts --network $_network; }; passParams"
+    "coverage": "npx hardhat coverage"
   },
   "repository": {
     "type": "git",

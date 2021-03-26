@@ -33,7 +33,7 @@ describe('Factory', () => {
     });
 
     it('Create Refunder', async () => {
-        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION, registry.address);
+        let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
         let txReceipt = await res.wait();
 
         const createRefunderEventIndex = 2;
