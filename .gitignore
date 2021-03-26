@@ -10,3 +10,4 @@ artifacts/
 cache/
 coverage.json
 .vscode
+dist/
