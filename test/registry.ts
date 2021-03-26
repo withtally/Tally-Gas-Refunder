@@ -136,7 +136,6 @@ describe('Registry', () => {
     });
 
     it('Should get Refunder count for correct', async () => {
-
         let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
         let txReceipt = await res.wait();
 
