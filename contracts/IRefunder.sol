@@ -20,4 +20,8 @@ interface IRefunder {
     ) external returns (bytes memory);
 
     function setMaxGasPrice(uint256 gasPrice) external;
+
+    function pause() external;
+
+    function unpause() external;
 }
