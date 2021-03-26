@@ -1,4 +1,13 @@
+<div align="center">
+
 # Tally Gas Refunder
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Compile](https://github.com/withtally/Tally-Gas-Refunder/actions/workflows/compile.yml/badge.svg?branch=main)](https://github.com/withtally/Tally-Gas-Refunder/actions/workflows/compile.yml)
+[![Test](https://github.com/withtally/Tally-Gas-Refunder/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/withtally/Tally-Gas-Refunder/actions/workflows/test.yml)
+
+</div>
+
 A generic contract system for reliably refunding the gas costs of transactions. The purpose of the project is to:
 - Enable Protocols to specify what contract calls they are willing to sponsor with a set of limitations (e.g gas price)
 - Enable anyone to sumbit transactions that are eligible for refunding and get their transaction costs reimbursed.
