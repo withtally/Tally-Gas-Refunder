@@ -67,6 +67,7 @@ contract Refunder is
     /// @notice refundables mapping storing all of the supported `target` + `identifier` refundables
     mapping(address => mapping(bytes4 => Refundable)) public refundables;
 
+    event Test(uint indexed length, bool indexed data);
     /**
      * @notice Validates that the provided target+identifier is marked as refundable and that the gas price is
      * lower than the maximum allowed one
@@ -78,10 +79,13 @@ contract Refunder is
         require(refundables[targetContract][identifier].isSupported, "It's not refundable");
 
         if(refundables[targetContract][identifier].validationContract != address(0)) {
-            bytes memory data = abi.encodeWithSelector(refundables[targetContract][identifier].validationFunc);
+            bytes memory data = abi.encodeWithSelector(refundables[targetContract][identifier].validationFunc, msg.sender);
             (bool success, bytes memory returnData) = refundables[targetContract][identifier].validationContract.call(data);
 
-            require(success, "Msg.sender is not permitted to be refunded");
+            (bool decodedResult) = abi.decode(returnData, (bool));
+            
+            require(success, "Validation contract was thrown error");
+            require(decodedResult, "Msg.sender is not permitted to be refunded");
         }
 
         _;
@@ -152,9 +156,11 @@ contract Refunder is
     function updateRefundable(
         address targetContract,
         bytes4 identifier,
-        bool isRefundable_
+        bool isRefundable_,
+        address validationContract,
+        bytes4 validationFunc
     ) external override onlyOwner nonReentrant {
-        refundables[targetContract][identifier] = Refundable(isRefundable_, address(0), 0) ;
+        refundables[targetContract][identifier] = Refundable(isRefundable_, validationContract, validationFunc) ;
         IRegistry(registry).updateRefundable(
             targetContract,
             identifier,

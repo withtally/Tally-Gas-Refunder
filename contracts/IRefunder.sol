@@ -8,7 +8,9 @@ interface IRefunder {
     function updateRefundable(
         address targetContract,
         bytes4 interfaceId,
-        bool isRefundable_
+        bool isRefundable_,
+        address validationContract,
+        bytes4 validationFunc
     ) external;
 
     function withdraw(uint256 amount) external;
