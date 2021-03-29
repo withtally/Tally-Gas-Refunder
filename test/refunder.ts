@@ -171,8 +171,9 @@ describe("Refunder", function() {
 			const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
 
 			// address, bytes4
-			const resBefore = await refunder.refundables(randomAddress, randomFuncIdAsBytes); 
-			expect(resBefore).to.be.eq(false);
+			const resBefore = await refunder.refundables(randomAddress, randomFuncIdAsBytes);
+			
+			expect(resBefore.isSupported, 'Refundable is supported').to.be.eq(false);
 
 			const res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, true);
 			let txReceipt = await res.wait();
@@ -181,7 +182,8 @@ describe("Refunder", function() {
 			expect(txReceipt.events[1].event, 'Invalid event name').to.be.eq('RefundableUpdate');
 
 			const resAfter = await refunder.refundables(randomAddress, randomFuncIdAsBytes); 
-			expect(resAfter).to.be.eq(true);
+			expect(resAfter.isSupported, 'Refundable is not supported').to.be.eq(true);
+			
 		});
 
 		it("Owner should be able to edit refundable", async function() {
@@ -191,19 +193,19 @@ describe("Refunder", function() {
 
 			// address, bytes4
 			const resBefore = await refunder.refundables(randomAddress, randomFuncIdAsBytes); 
-			expect(resBefore).to.be.eq(false);
+			expect(resBefore.isSupported, 'Refundable is supported').to.be.eq(false);
 
 			let res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, true);
 			await res.wait();
 
 			const resAfter = await refunder.refundables(randomAddress, randomFuncIdAsBytes); 
-			expect(resAfter).to.be.eq(true);
+			expect(resAfter.isSupported, 'Refundable is not supported').to.be.eq(true);
 
 			res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, false);
 			await res.wait();
 
 			const resAfterEdit = await refunder.refundables(randomAddress, randomFuncIdAsBytes); 
-			expect(resAfterEdit).to.be.eq(false);
+			expect(resAfterEdit.isSupported, 'Refundable is supported').to.be.eq(false);
 		});
 
 		it("Not owner should NOT be able to add refundable", async function() {

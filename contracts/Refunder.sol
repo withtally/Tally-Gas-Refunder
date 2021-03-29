@@ -38,6 +38,12 @@ contract Refunder is
     /// @notice The gas cost for executing refund internal function
     uint256 public REFUND_OP_GAS_COST = 5106;
 
+    struct Refundable {
+        bool isSupported;
+        address validationContract;
+        bytes4 validationFunc;
+    }
+
     /// @notice Deposit event emitted once someone deposits ETH to the contract
     event Deposit(address indexed depositor, uint256 value);
 
@@ -59,7 +65,7 @@ contract Refunder is
     );
 
     /// @notice refundables mapping storing all of the supported `target` + `identifier` refundables
-    mapping(address => mapping(bytes4 => bool)) public refundables;
+    mapping(address => mapping(bytes4 => Refundable)) public refundables;
 
     /**
      * @notice Validates that the provided target+identifier is marked as refundable and that the gas price is
@@ -69,7 +75,14 @@ contract Refunder is
      */
     modifier onlySupportedParams(address targetContract, bytes4 identifier) {
         require(tx.gasprice <= maxGasPrice, "Gas price is too expensive");
-        require(refundables[targetContract][identifier], "It's not refundable");
+        require(refundables[targetContract][identifier].isSupported, "It's not refundable");
+
+        if(refundables[targetContract][identifier].validationContract != address(0)) {
+            bytes memory data = abi.encodeWithSelector(refundables[targetContract][identifier].validationFunc);
+            (bool success, bytes memory returnData) = refundables[targetContract][identifier].validationContract.call(data);
+
+            require(success, "Msg.sender is not permitted to be refunded");
+        }
 
         _;
     }
@@ -141,7 +154,7 @@ contract Refunder is
         bytes4 identifier,
         bool isRefundable_
     ) external override onlyOwner nonReentrant {
-        refundables[targetContract][identifier] = isRefundable_;
+        refundables[targetContract][identifier] = Refundable(isRefundable_, address(0), 0) ;
         IRegistry(registry).updateRefundable(
             targetContract,
             identifier,
@@ -171,6 +184,7 @@ contract Refunder is
         nonReentrant
         returns (bytes memory)
     {
+
         bytes memory data = abi.encodeWithSelector(identifier, arguments);
         (bool success, bytes memory returnData) = target.call(data);
 
