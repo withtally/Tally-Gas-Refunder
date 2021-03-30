@@ -30,6 +30,7 @@ import {
 	ZERO_FUNC
 } from './constants/values.json';
 import { string } from "hardhat/internal/core/params/argumentTypes";
+import { ENGINE_METHOD_ALL } from "node:constants";
 
 describe("Refunder", function() {
 
@@ -60,9 +61,11 @@ describe("Refunder", function() {
 		await refunder.init(owner.address, registry.address);
 
 		await registry.register(refunder.address, REFUNDER_VERSION);
-
+		// target: greeting, identifier: , args
+		const relayAndRefundFuncID = generateFuncIdAsBytes('relayAndRefund(address,bytes4,bytes)');
+		const greetFuncID = generateFuncIdAsBytes('greet()');
 		const Permitter = await ethers.getContractFactory("Permitter");
-		permitter = await Permitter.deploy();
+		permitter = await Permitter.deploy(relayAndRefundFuncID, greeter.address, greetFuncID);
 		await permitter.deployed();
 	});
 
