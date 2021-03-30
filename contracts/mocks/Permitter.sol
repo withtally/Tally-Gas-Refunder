@@ -9,7 +9,7 @@ contract Permitter {
         refundableUsers[user] = _isApproved;
     }
 
-    function isApproved(address user) public view returns(bool){
+    function isApproved(address user, address target, bytes4 funcID, bytes memory args) public view returns(bool){
         return refundableUsers[user];
     }
 
