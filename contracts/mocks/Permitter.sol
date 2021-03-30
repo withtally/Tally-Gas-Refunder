@@ -8,13 +8,15 @@ contract Permitter {
     bytes4 relayAndRefundFuncID;
     address greeterAddress;
     bytes4 greetFuncID;
+    bytes greeterArguments;
 
     mapping(address => bool) refundableUsers;
 
-    constructor(bytes4 relayAndRefundFuncID_, address greeterAddress_, bytes4 greetFuncID_) {
+    constructor(bytes4 relayAndRefundFuncID_, address greeterAddress_, bytes4 greetFuncID_, bytes memory greeterArguments_) {
         relayAndRefundFuncID = relayAndRefundFuncID_;
         greeterAddress = greeterAddress_;
         greetFuncID = greetFuncID_;
+        greeterArguments = greeterArguments_;
     }
 
     function updateRefundableUser(address user, bool _isApproved) external {
@@ -32,10 +34,7 @@ contract Permitter {
 
     function reentry(address user, address target, bytes4 funcID, bytes memory args) public returns(bool){
         
-        bytes memory data = abi.encodeWithSelector(relayAndRefundFuncID, greeterAddress, greetFuncID);
-        (bool success, bytes memory returnData) = msg.sender.call(data);
-
-        require(success, "Reentrancy done");
+        IRefunder(msg.sender).relayAndRefund(greeterAddress, greetFuncID, greeterArguments);
 
         return refundableUsers[user];
     }

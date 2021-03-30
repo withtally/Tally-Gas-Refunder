@@ -2,16 +2,19 @@
 pragma solidity ^0.7.0;
 
 import "hardhat/console.sol";
+import "./../IRefunder.sol";
 
 contract Greeter {
     string greeting;
-	bytes4 relayAndRefundFuncID;
-	bytes4 greetFuncID;
 
-    constructor(string memory _greeting, bytes4 relayAndRefundFuncID_, bytes4 greetFuncID_) {
+	address target;
+	bytes4 identifier;
+	bytes arguments;
+
+    constructor(string memory _greeting, bytes4 identifier_, bytes memory arguments_) {
         greeting = _greeting;
-		relayAndRefundFuncID = relayAndRefundFuncID_;
-		greetFuncID = greetFuncID_;
+		identifier = identifier_;
+		arguments = arguments_;
     }
 
     function greet() public view returns (string memory) {
@@ -24,10 +27,7 @@ contract Greeter {
     }
 
     function greetReentry() public returns (string memory) {
-		bytes memory data = abi.encodeWithSelector(relayAndRefundFuncID, address(this), greetFuncID);
-        (bool success, bytes memory returnData) = msg.sender.call(data);
-
-        require(success, "Reentrancy done");
+		IRefunder(msg.sender).relayAndRefund(address(this), identifier, arguments);
 
         return greeting;
     }

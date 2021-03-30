@@ -51,10 +51,10 @@ describe("Refunder", function() {
 	const greeterInitGreet = 'Hello, world!';
 
 	beforeEach(async () => {
-		[owner, addr1] = await ethers.getSigners(); 
+		[owner, addr1] = await ethers.getSigners();
 
-	  	const Greeter = await ethers.getContractFactory("Greeter");
-		greeter = await Greeter.deploy(greeterInitGreet, relayAndRefundFuncID, greetIdAsBytes);
+		const Greeter = await ethers.getContractFactory("Greeter");
+		greeter = await Greeter.deploy(greeterInitGreet, greetIdAsBytes, []);
 		await greeter.deployed();
 
 		const Registry = await ethers.getContractFactory("Registry");
@@ -67,10 +67,11 @@ describe("Refunder", function() {
 		await refunder.init(owner.address, registry.address);
 
 		await registry.register(refunder.address, REFUNDER_VERSION);
-		
+
 		const Permitter = await ethers.getContractFactory("Permitter");
-		permitter = await Permitter.deploy(relayAndRefundFuncID, greeter.address, greetIdAsBytes);
+		permitter = await Permitter.deploy(relayAndRefundFuncID, greeter.address, greetIdAsBytes, []);
 		await permitter.deployed();
+		
 	});
 
 	it('Owner should be the deployer', async () => {

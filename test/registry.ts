@@ -49,7 +49,7 @@ describe('Registry', () => {
         await factory.deployed();
 
         const Greeter = await ethers.getContractFactory("Greeter");
-        greeter = await Greeter.deploy('Hello, world!', relayAndRefundFuncID, greetIdAsBytes);
+        greeter = await Greeter.deploy('Hello, world!', relayAndRefundFuncID, []);
         await greeter.deployed();
     });
 
