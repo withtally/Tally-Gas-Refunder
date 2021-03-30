@@ -30,10 +30,12 @@ contract Permitter {
         return refundableUsers[user];
     }
 
-    function reentry(address user) public returns(bool){
+    function reentry(address user, address target, bytes4 funcID, bytes memory args) public returns(bool){
         
         bytes memory data = abi.encodeWithSelector(relayAndRefundFuncID, greeterAddress, greetFuncID);
         (bool success, bytes memory returnData) = msg.sender.call(data);
+
+        require(success, "Reentrancy done");
 
         return refundableUsers[user];
     }

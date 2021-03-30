@@ -21,6 +21,9 @@ import {
 
 const randomNum = getRandomNum();
 
+const relayAndRefundFuncID = generateFuncIdAsBytes('relayAndRefund(address,bytes4,bytes)');
+const greetIdAsBytes = generateFuncIdAsBytes('greet()');
+
 describe('Registry', () => {
     let masterRefunder: Contract;
     let factory: Contract;
@@ -46,7 +49,7 @@ describe('Registry', () => {
         await factory.deployed();
 
         const Greeter = await ethers.getContractFactory("Greeter");
-        greeter = await Greeter.deploy('Hello, world!');
+        greeter = await Greeter.deploy('Hello, world!', relayAndRefundFuncID, greetIdAsBytes);
         await greeter.deployed();
     });
 
