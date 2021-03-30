@@ -38,12 +38,15 @@ contract Refunder is
     /// @notice The gas cost for executing refund internal function
     uint256 public REFUND_OP_GAS_COST = 5106;
 
+    /**
+    * @notice Struct storing the refundable data for a given target
+    * isSupported marks whether the refundable is supported or not
+    * validationContract contract address to call for business logic validation on every refund
+    * validationFunc function to call for business logic validation on every refund
+    */
     struct Refundable {
-        // shows that current refundable is supported or not
         bool isSupported;
-        //  The contract that validate who is permitted for refund
         address validationContract;
-        // function that validate is the caller can be refunded 
         bytes4 validationFunc;
     }
 
@@ -184,7 +187,7 @@ contract Refunder is
     {
         Refundable memory _refundableData = refundables[target][identifier];
         if(_refundableData.validationContract != address(0)) {
-            bytes memory dataValidation = abi.encodeWithSelector(_refundableData.validationFunc, msg.sender);
+            bytes memory dataValidation = abi.encodeWithSelector(_refundableData.validationFunc, msg.sender, target, identifier, arguments);
             (bool successValidation, bytes memory returnDataValidation) = _refundableData.validationContract.call(dataValidation);
 
             (bool decodedResult) = abi.decode(returnDataValidation, (bool));
