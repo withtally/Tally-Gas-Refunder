@@ -38,6 +38,21 @@ contract Refunder is
     /// @notice The gas cost for executing refund internal function
     uint256 public REFUND_OP_GAS_COST = 5106;
 
+    /**
+    * @notice Struct storing the refundable data for a given target
+    * isSupported marks whether the refundable is supported or not
+    * validationContract contract address to call for business logic validation on every refund
+    * validationFunc function to call for business logic validation on every refund
+    */
+    struct Refundable {
+        bool isSupported;
+        address validationContract;
+        bytes4 validationFunc;
+    }
+
+    /// @notice refundables mapping storing all of the supported `target` + `identifier` refundables
+    mapping(address => mapping(bytes4 => Refundable)) public refundables;
+
     /// @notice Deposit event emitted once someone deposits ETH to the contract
     event Deposit(address indexed depositor, uint256 value);
 
@@ -58,9 +73,6 @@ contract Refunder is
         bytes4 indexed identifier
     );
 
-    /// @notice refundables mapping storing all of the supported `target` + `identifier` refundables
-    mapping(address => mapping(bytes4 => bool)) public refundables;
-
     /**
      * @notice Validates that the provided target+identifier is marked as refundable and that the gas price is
      * lower than the maximum allowed one
@@ -69,7 +81,7 @@ contract Refunder is
      */
     modifier onlySupportedParams(address targetContract, bytes4 identifier) {
         require(tx.gasprice <= maxGasPrice, "Gas price is too expensive");
-        require(refundables[targetContract][identifier], "It's not refundable");
+        require(refundables[targetContract][identifier].isSupported, "It's not refundable");
 
         _;
     }
@@ -139,9 +151,11 @@ contract Refunder is
     function updateRefundable(
         address targetContract,
         bytes4 identifier,
-        bool isRefundable_
+        bool isRefundable_,
+        address validationContract,
+        bytes4 validationFunc
     ) external override onlyOwner nonReentrant {
-        refundables[targetContract][identifier] = isRefundable_;
+        refundables[targetContract][identifier] = Refundable(isRefundable_, validationContract, validationFunc) ;
         IRegistry(registry).updateRefundable(
             targetContract,
             identifier,
@@ -171,6 +185,17 @@ contract Refunder is
         nonReentrant
         returns (bytes memory)
     {
+        Refundable memory _refundableData = refundables[target][identifier];
+        if(_refundableData.validationContract != address(0)) {
+            bytes memory dataValidation = abi.encodeWithSelector(_refundableData.validationFunc, msg.sender, target, identifier, arguments);
+            (bool successValidation, bytes memory returnDataValidation) = _refundableData.validationContract.call(dataValidation);
+
+            (bool decodedResult) = abi.decode(returnDataValidation, (bool));
+            
+            require(successValidation, "Validation contract reverted");
+            require(decodedResult, "Not eligible for refunding");
+        }
+
         bytes memory data = abi.encodeWithSelector(identifier, arguments);
         (bool success, bytes memory returnData) = target.call(data);
 

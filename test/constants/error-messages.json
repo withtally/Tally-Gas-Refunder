@@ -6,5 +6,7 @@
     "FUNC_CALL_NOT_SUCCESSFUL": "Function call not successful",
     "PAUSED": "Pausable: paused",
     "REFUNDER_NOT_A_CALLER": "Refunder not a caller",
-    "INVALID_REFUNDER_INDEX": "Invalid refunder index"
+    "INVALID_REFUNDER_INDEX": "Invalid refunder index",
+    "NOT_ELIGIABLE_FOR_REFUNDING": "Not eligible for refunding",
+    "CONTRACT_REVERTED": "Validation contract reverted"
 }
