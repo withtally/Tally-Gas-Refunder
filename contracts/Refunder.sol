@@ -130,7 +130,7 @@ contract Refunder is
      */
     function withdraw(uint256 amount) external override onlyOwner nonReentrant {
         address payable payableAddrSender = payable(msg.sender);
-        Address.sendValue(payableAddrSender, amount);
+        payableAddrSender.transfer(amount);
         emit Withdraw(msg.sender, amount);
     }
 
@@ -206,7 +206,7 @@ contract Refunder is
 
     function refund(address sender, uint256 amount) internal returns (bool) {
         address payable payableAddrSender = payable(sender);
-        Address.sendValue(payableAddrSender, amount);
+        payableAddrSender.transfer(amount);
 
         return true;
     }

@@ -14,7 +14,8 @@ import {
 	FUNC_CALL_NOT_SUCCESSFUL,
 	PAUSED,
 	NOT_ELIGIABLE_FOR_REFUNDING,
-	CONTRACT_REVERTED
+	CONTRACT_REVERTED,
+	FUNCTION_CALL_FAILED
 } from './constants/error-messages.json';
 
 import {
@@ -146,7 +147,7 @@ describe("Refunder", function() {
 			const balanceOfRefunderBefore = await ethers.provider.getBalance(refunder.address);
 
 			expect('0').to.be.eq(balanceOfRefunderBefore.toString());
-			await expect(refunder.withdraw(value)).to.be.revertedWith(INSUFFICIENT_BALANCE);
+			await expect(refunder.withdraw(value)).to.be.revertedWith(FUNCTION_CALL_FAILED);
 
 		});
 	
@@ -436,7 +437,6 @@ describe("Refunder", function() {
 		const args = ethers.utils.arrayify(hexString);
 		
 		let res = await refunder.connect(addr1).relayAndRefund(greeter.address, funcIdAsBytes, args);
-
 		let txReceipt = await res.wait();
 		let txCost = res.gasPrice.mul(txReceipt.gasUsed);
 
