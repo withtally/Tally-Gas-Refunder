@@ -154,7 +154,7 @@ contract Refunder is
         bool isRefundable_,
         address validationContract,
         bytes4 validationFunc
-    ) external override onlyOwner nonReentrant {
+    ) external override onlyOwner {
         refundables[targetContract][identifier] = Refundable(isRefundable_, validationContract, validationFunc) ;
         IRegistry(registry).updateRefundable(
             targetContract,
@@ -180,9 +180,9 @@ contract Refunder is
         external
         override
         netGasCost
+        nonReentrant
         onlySupportedParams(target, identifier)
         whenNotPaused
-        nonReentrant
         returns (bytes memory)
     {
         Refundable memory _refundableData = refundables[target][identifier];
