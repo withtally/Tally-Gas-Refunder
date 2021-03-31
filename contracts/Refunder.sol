@@ -8,8 +8,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-
 /**
  *  @title Refunder - core contract for refunding arbitrary contract+indentifier calls
  *  between 96%-99% of the gas costs of the transaction
@@ -20,7 +18,6 @@ contract Refunder is
     PausableUpgradeable,
     IRefunder
 {
-    using Address for address;
 
     /// @notice Address of the refunder registry
     address public registry;
@@ -128,7 +125,7 @@ contract Refunder is
      * @notice Withdraws ETH from the contract
      * @param amount amount of ETH to withdraw
      */
-    function withdraw(uint256 amount) external override onlyOwner nonReentrant {
+    function withdraw(uint256 amount) external override onlyOwner {
         address payable payableAddrSender = payable(msg.sender);
         payableAddrSender.transfer(amount);
         emit Withdraw(msg.sender, amount);
