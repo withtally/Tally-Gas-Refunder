@@ -14,15 +14,14 @@ import {
 } from './constants/error-messages.json';
 
 import {
-	REFUNDER_VERSION,
-	ZERO_ADDRESS,
-	ZERO_FUNC
+    REFUNDER_VERSION,
+    ZERO_ADDRESS,
+    ZERO_FUNC
 } from './constants/values.json';
 
 const randomNum = getRandomNum();
 
 const relayAndRefundFuncID = generateFuncIdAsBytes('relayAndRefund(address,bytes4,bytes)');
-const greetIdAsBytes = generateFuncIdAsBytes('greet()');
 
 describe('Registry', () => {
     let masterRefunder: Contract;

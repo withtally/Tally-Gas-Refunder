@@ -16,10 +16,10 @@ const strToHex = (text: string) => {
 	for (var i = 0; i < text.length; i++) {
 		var s = text.charCodeAt(i).toString(16);
 		while (s.length < 2) {
-		  s = '0' + s;
+			s = '0' + s;
 		}
 		msg += s;
-	  }
+	}
 
 	return '0x' + msg;
 }
@@ -31,19 +31,19 @@ const getXPercentFrom = (number: BigNumber, percent: number) => {
 
 // returns a random integer from 1 to 9
 const getRandomNum = () => {
-    let randomNum = Math.floor(Math.random() * 10);
+	let randomNum = Math.floor(Math.random() * 10);
 
-    if (randomNum === 0) {
-        return 1;
-    }
+	if (randomNum === 0) {
+		return 1;
+	}
 
-    return randomNum;    
+	return randomNum;
 }
 
 export {
-    ethToWei,
-    generateFuncIdAsBytes,
-    strToHex,
-    getXPercentFrom,
-    getRandomNum
+	ethToWei,
+	generateFuncIdAsBytes,
+	strToHex,
+	getXPercentFrom,
+	getRandomNum
 }

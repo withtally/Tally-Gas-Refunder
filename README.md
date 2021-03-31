@@ -10,101 +10,93 @@
 
 A generic contract system for reliably refunding the gas costs of transactions. The purpose of the project is to:
 - Enable Protocols to specify what contract calls they are willing to sponsor with a set of limitations (e.g gas price)
-- Enable anyone to sumbit transactions that are eligible for refunding and get their transaction costs reimbursed.
+- Enable anyone to sumbit transactions that are eligible for refunding and get their transaction fee reimbursed in the range of 96% - 99% (more on the different in the range later)
+- Provide a central registry for persisting all deployed refunders and their supported refundable transactions
 
 ## Contracts
 
-There are 3 contracts:
--  Refunder factory
--  Refunder
--  Registry
+- Refunder factory
+- Refunder
+- Registry
 
-### Refunder Factory
+### Factory
+
 Factory contract used for the deployment of `Refunder` contracts. Anyone is able to deploy a refunder contract and configure it for its own needs.
+
 The factory uses OpenZeppelin's [EIP-1167](https://eips.ethereum.org/EIPS/eip-1167) Clone implementation found [here](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/proxy/Clones.sol) for minimising gas costs.
-- On deployment:
-  - `msg.sender` is the initial owner of the `Refunder` contract.  
+
+On `refunder` deployment `msg.sender` is the initial owner of the `Refunder` contract.
 
 ### Refunder
-Refunder contract is a standalone, completely independent contract that represents the interest of a given protocol/entity that wants to sponsor a set of function calls.
+
+Refunder contract represents the interest of a given protocol/entity that wants to sponsor a set of function calls.
+
 The contract:
 - is `ownable`. Initially set to the `msg.sender` that calls the factory
-- Holds `ETH` for gas cost reimbursements
-- has a `map(address -> map(bytes4, bool))` of whitelisted `refundables`. The key of the outer map is a "whitelisted" contract `address`. Calls are represented by the function's signature. The keys of the inner map (`bytes4`) are calculated as `keccak256('functionName(params)')`. For example, if a given refunder contract allows for refunding of ERC20 `approve` tx, the key of the inner map would be `bytes4(keccak256(approve(address,uint256))`. The value (`uint256`) of the inner map (`map(bytes4, uint256)`) represents the `estimated` gas costs of refunding users for that specific contract call. NOTE: this is not the gas costs that will be reimbursed to the `msg.sender`, but the `expected` gas costs only for calling `refund` with those arguments. 
+- holds `ETH` for gas cost reimbursements
+- has a mapping of whitelisted `refundables`
 
-Forwards the provided contract call data (e.g raw msg + signature) to the target contract and refunds the `msg.sender` afterwards if within gasprice bounds.
+Each refundable has:
+- `target` - contract address (f.e Compound Governance Alpha)
+- `identifier` - function identifier (f.e `castVoteBySig`)
+- `validationContract` - Optional validation contract to call when determening whether to refund the `msg.sender`
+- `validationIdentifier` - Optional validati identifier to call when determening whether to refund the `msg.sender`
 
-#### Interface
+The contract measures the net gas usage and reimburses the `msg.sender` for all of the gas costs **except for the arguments** provided to the `relayAndRefund` function. This is where the `96-99%` fomes from. If the `arguments` gas costs are big, the refunding proportional to the transaction cost will be lower. 
 
-```Solidity
-
-// Edits the refundables mapping
-function updateRefundable(address target, bytes4 identifierId, bool whitelist)
-
-// Relays the call to the target address (if supported) and refunds the msg.sender. Should be non reentrant
-function relayAndRefund(address target, bytes4 interfaceId, bytes arguments) external returns (bool)
-
-// Withdraws ETH from the Refunder contract
-function withdraw(uint256 amount)
-
-// Sets the maximum gas price that the refunder will be able to refund
-function setMaxGasPrice(uint256 gasPrice) 
-
-```
-
-#### Pseudo-code
-
-**Refund calculations**
-
-```Solidity
-modifier netGasCost() {
-    uint256 gasProvided = gasleft();
-    _;
-    
-    uint256 gasUsedSoFar = gasProvided - gasleft();
-    refundAmount = (gasUsedSoFar + REFUND_COST) * tx.gasprice;
-    this.refund(msg.sender, refundAmount);
-}
-```
- 
-**Supply and Refund**
-
-```Solidity
-
-(bool success, bytes memory returnData) = target.call(data) // forwarding value as-well
-
-```
+Note: Gas costs for the `arguments` are as follows:
+- `16` gas for each non-zero byte
+- `4` gas for each zero byte
 
 ### Registry
 
 The registry contract stores all `Refunder`s deployed and their supported `targetContract`s and `identifiers`. Anyone is able to:
 - query all deployed refunder contracts
-- query by a given pair of `(targetContract, identifierId)` the list of `refunderContract`s that are willing to refund the `msg.sender`
+- query by a given pair of `(targetContract, identifierId)` the list of `refunder`s that are willing to refund the `msg.sender`
 
-#### Pseudo-code
+## Development
 
-```Solidity
-contract Registry {
-    using EnumerableSet for EnumerableSet.AddressSet;
+The project uses the [hardhat](https://hardhat.org/) framework. 
+### Compile
 
-    // Map of refunders and their version, starting with 1
-    mapping(address => uint8) refunderVersion;
-
-    // Tuple of target address + identifier corresponding to set of refunders
-    mapping(address => mapping(bytes4 => EnumerableSet.AddressSet)) aggregatedRefundables;
-
-    // Set of refunders
-    EnumerableSet.AddressSet public refunders;
-
-    // Returns all refunders
-    // function getRefunders() returns address[]
-
-    // Returns all refunders willing to sponsor the following target + identifier
-    // function refundersFor(address target, bytes4 identifier) returns address[]
-
-    // Only refunder contract can call. Adds the refunder contract in the Address Set
-    // If support is true -> refunder is marked to refund target+identifier calls
-    // If support is false -> refunder is marked NOT to refund target+identifier calls
-    // function updateRefundable(address target, bytes4 identifier, bool support)
-}
+In order to compile, one must execute:
 ```
+npm run compile
+```
+### Test
+In order to run the unit tests, one must execute:
+run test
+```
+npm run test
+```
+### Coverage
+In order to run the tests with code coverage, one must execute:
+
+```
+npm run coverage
+```
+
+### Deployment
+
+There are several deployment scripts defined in the `./scripts` folder and referenced using [hardhat tasks](https://hardhat.org/guides/create-task.html).
+
+In order to deploy the registry:
+```
+npx hardhat deploy-registry --network MY_NETWORK_NAME
+```
+
+In order to deploy the factory:
+```
+npx hardhat deploy-factory --network MY_NETWORK_NAME --registry REGISTRY_ADDRESS
+```
+
+In order to deploy master refunder copy:
+```
+npx hardhat deploy-master-refunder --network MY_NETWORK_NAME
+```
+
+In Order to deploy refunder:
+```
+npx hardhat deploy-refunder --network MY_NETWORK_NAME --factory FACTORY_ADDRESS --masterRefunder MASTER_REFUNDER_ADDRESS --refunderVersion VERSION_OF_THE_REFUNDER
+```
+Note: By default, the version of the refunder is `1`
