@@ -8,8 +8,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-
 /**
  *  @title Refunder - core contract for refunding arbitrary contract+indentifier calls
  *  between 96%-99% of the gas costs of the transaction
@@ -20,7 +18,6 @@ contract Refunder is
     PausableUpgradeable,
     IRefunder
 {
-    using Address for address;
 
     /// @notice Address of the refunder registry
     address public registry;
@@ -128,9 +125,9 @@ contract Refunder is
      * @notice Withdraws ETH from the contract
      * @param amount amount of ETH to withdraw
      */
-    function withdraw(uint256 amount) external override onlyOwner nonReentrant {
+    function withdraw(uint256 amount) external override onlyOwner {
         address payable payableAddrSender = payable(msg.sender);
-        Address.sendValue(payableAddrSender, amount);
+        payableAddrSender.transfer(amount);
         emit Withdraw(msg.sender, amount);
     }
 
@@ -154,7 +151,7 @@ contract Refunder is
         bool isRefundable_,
         address validationContract,
         bytes4 validationFunc
-    ) external override onlyOwner nonReentrant {
+    ) external override onlyOwner {
         refundables[targetContract][identifier] = Refundable(isRefundable_, validationContract, validationFunc) ;
         IRegistry(registry).updateRefundable(
             targetContract,
@@ -180,9 +177,9 @@ contract Refunder is
         external
         override
         netGasCost
+        nonReentrant
         onlySupportedParams(target, identifier)
         whenNotPaused
-        nonReentrant
         returns (bytes memory)
     {
         Refundable memory _refundableData = refundables[target][identifier];
@@ -206,7 +203,7 @@ contract Refunder is
 
     function refund(address sender, uint256 amount) internal returns (bool) {
         address payable payableAddrSender = payable(sender);
-        Address.sendValue(payableAddrSender, amount);
+        payableAddrSender.transfer(amount);
 
         return true;
     }

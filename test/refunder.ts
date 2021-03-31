@@ -14,7 +14,8 @@ import {
 	FUNC_CALL_NOT_SUCCESSFUL,
 	PAUSED,
 	NOT_ELIGIABLE_FOR_REFUNDING,
-	CONTRACT_REVERTED
+	CONTRACT_REVERTED,
+	FUNCTION_CALL_FAILED
 } from './constants/error-messages.json';
 
 import {
@@ -32,8 +33,11 @@ import {
 
 const greetIdAsBytes = generateFuncIdAsBytes('greet()');
 const setGreetingIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
-const validationFuncIdAsBytes = generateFuncIdAsBytes('isApproved(address,address,bytes4,bytes)');
+const isApprovedIdAsBytes = generateFuncIdAsBytes('isApproved(address,address,bytes4,bytes)');
 const throwErrorIdAsBytes = generateFuncIdAsBytes('throwError(address)');
+const reentryApproverIdAsBytes = generateFuncIdAsBytes('reentry(address,address,bytes4,bytes)');
+const reentryGreeterIdAsBytes = generateFuncIdAsBytes('greetReentry()');
+const relayAndRefundFuncID = generateFuncIdAsBytes('relayAndRefund(address,bytes4,bytes)');
 
 describe("Refunder", function() {
 
@@ -48,10 +52,10 @@ describe("Refunder", function() {
 	const greeterInitGreet = 'Hello, world!';
 
 	beforeEach(async () => {
-		[owner, addr1] = await ethers.getSigners(); 
+		[owner, addr1] = await ethers.getSigners();
 
-	  	const Greeter = await ethers.getContractFactory("Greeter");
-		greeter = await Greeter.deploy(greeterInitGreet);
+		const Greeter = await ethers.getContractFactory("Greeter");
+		greeter = await Greeter.deploy(greeterInitGreet, greetIdAsBytes, []);
 		await greeter.deployed();
 
 		const Registry = await ethers.getContractFactory("Registry");
@@ -66,8 +70,9 @@ describe("Refunder", function() {
 		await registry.register(refunder.address, REFUNDER_VERSION);
 
 		const Permitter = await ethers.getContractFactory("Permitter");
-		permitter = await Permitter.deploy();
+		permitter = await Permitter.deploy(relayAndRefundFuncID, greeter.address, greetIdAsBytes, []);
 		await permitter.deployed();
+		
 	});
 
 	it('Owner should be the deployer', async () => {
@@ -142,7 +147,7 @@ describe("Refunder", function() {
 			const balanceOfRefunderBefore = await ethers.provider.getBalance(refunder.address);
 
 			expect('0').to.be.eq(balanceOfRefunderBefore.toString());
-			await expect(refunder.withdraw(value)).to.be.revertedWith(INSUFFICIENT_BALANCE);
+			await expect(refunder.withdraw(value)).to.be.revertedWith(FUNCTION_CALL_FAILED);
 
 		});
 	
@@ -314,7 +319,7 @@ describe("Refunder", function() {
 
 		it('NOT approved user should NOT be refunded', async () => {
 
-			let res = await refunder.updateRefundable(greeter.address, setGreetingIdAsBytes, true, permitter.address, validationFuncIdAsBytes);
+			let res = await refunder.updateRefundable(greeter.address, setGreetingIdAsBytes, true, permitter.address, isApprovedIdAsBytes);
 			await res.wait();
 
 			const text = 'Hello, Tester!';
@@ -328,7 +333,7 @@ describe("Refunder", function() {
 
 			await permitter.updateRefundableUser(addr1.address, true);
 			
-			let res = await refunder.updateRefundable(greeter.address, setGreetingIdAsBytes, true, permitter.address, validationFuncIdAsBytes);
+			let res = await refunder.updateRefundable(greeter.address, setGreetingIdAsBytes, true, permitter.address, isApprovedIdAsBytes);
 			await res.wait();
 
 			await validateRelayAndRefund(setGreetingIdAsBytes);
@@ -348,6 +353,32 @@ describe("Refunder", function() {
 			const args = ethers.utils.arrayify(hexString);
 			
 			await expect(refunder.connect(addr1).relayAndRefund(greeter.address, setGreetingIdAsBytes, args)).to.be.revertedWith(CONTRACT_REVERTED);
+
+		});
+
+		it('Call reentry permitter, Refunder should revert on validation call', async () => {
+
+			await permitter.updateRefundableUser(addr1.address, true);
+			
+			let res = await refunder.updateRefundable(greeter.address, greetIdAsBytes, true, permitter.address, reentryApproverIdAsBytes);
+			await res.wait();
+
+			const text = 'Hello, Tester!';
+			const hexString = strToHex(text);
+			const args = ethers.utils.arrayify(hexString);
+			
+			await expect(refunder.connect(addr1).relayAndRefund(greeter.address, greetIdAsBytes, args)).to.be.revertedWith(CONTRACT_REVERTED);
+
+		});
+
+		it('Call reentry refund function', async () => {
+
+			await permitter.updateRefundableUser(addr1.address, true);
+
+			let res = await refunder.updateRefundable(greeter.address, reentryGreeterIdAsBytes, true, permitter.address, isApprovedIdAsBytes);
+			await res.wait();
+			
+			await expect(refunder.connect(addr1).relayAndRefund(greeter.address, reentryGreeterIdAsBytes, [])).to.be.revertedWith(FUNC_CALL_NOT_SUCCESSFUL);
 
 		});
 	});
@@ -406,7 +437,6 @@ describe("Refunder", function() {
 		const args = ethers.utils.arrayify(hexString);
 		
 		let res = await refunder.connect(addr1).relayAndRefund(greeter.address, funcIdAsBytes, args);
-
 		let txReceipt = await res.wait();
 		let txCost = res.gasPrice.mul(txReceipt.gasUsed);
 
