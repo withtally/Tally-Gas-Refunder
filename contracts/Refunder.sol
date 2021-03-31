@@ -18,7 +18,6 @@ contract Refunder is
     PausableUpgradeable,
     IRefunder
 {
-
     /// @notice Address of the refunder registry
     address public registry;
 
@@ -36,11 +35,11 @@ contract Refunder is
     uint256 public REFUND_OP_GAS_COST = 5106;
 
     /**
-    * @notice Struct storing the refundable data for a given target
-    * isSupported marks whether the refundable is supported or not
-    * validationContract contract address to call for business logic validation on every refund
-    * validationFunc function to call for business logic validation on every refund
-    */
+     * @notice Struct storing the refundable data for a given target
+     * isSupported marks whether the refundable is supported or not
+     * validationContract contract address to call for business logic validation on every refund
+     * validationFunc function to call for business logic validation on every refund
+     */
     struct Refundable {
         bool isSupported;
         address validationContract;
@@ -78,7 +77,10 @@ contract Refunder is
      */
     modifier onlySupportedParams(address targetContract, bytes4 identifier) {
         require(tx.gasprice <= maxGasPrice, "Gas price is too expensive");
-        require(refundables[targetContract][identifier].isSupported, "It's not refundable");
+        require(
+            refundables[targetContract][identifier].isSupported,
+            "It's not refundable"
+        );
 
         _;
     }
@@ -152,7 +154,11 @@ contract Refunder is
         address validationContract,
         bytes4 validationFunc
     ) external override onlyOwner {
-        refundables[targetContract][identifier] = Refundable(isRefundable_, validationContract, validationFunc) ;
+        refundables[targetContract][identifier] = Refundable(
+            isRefundable_,
+            validationContract,
+            validationFunc
+        );
         IRegistry(registry).updateRefundable(
             targetContract,
             identifier,
@@ -183,12 +189,20 @@ contract Refunder is
         returns (bytes memory)
     {
         Refundable memory _refundableData = refundables[target][identifier];
-        if(_refundableData.validationContract != address(0)) {
-            bytes memory dataValidation = abi.encodeWithSelector(_refundableData.validationFunc, msg.sender, target, identifier, arguments);
-            (bool successValidation, bytes memory returnDataValidation) = _refundableData.validationContract.call(dataValidation);
+        if (_refundableData.validationContract != address(0)) {
+            bytes memory dataValidation =
+                abi.encodeWithSelector(
+                    _refundableData.validationFunc,
+                    msg.sender,
+                    target,
+                    identifier,
+                    arguments
+                );
+            (bool successValidation, bytes memory returnDataValidation) =
+                _refundableData.validationContract.call(dataValidation);
 
-            (bool decodedResult) = abi.decode(returnDataValidation, (bool));
-            
+            bool decodedResult = abi.decode(returnDataValidation, (bool));
+
             require(successValidation, "Validation contract reverted");
             require(decodedResult, "Not eligible for refunding");
         }

@@ -7,14 +7,18 @@ import "./../IRefunder.sol";
 contract Greeter {
     string greeting;
 
-	address target;
-	bytes4 identifier;
-	bytes arguments;
+    address target;
+    bytes4 identifier;
+    bytes arguments;
 
-    constructor(string memory _greeting, bytes4 identifier_, bytes memory arguments_) {
+    constructor(
+        string memory _greeting,
+        bytes4 identifier_,
+        bytes memory arguments_
+    ) {
         greeting = _greeting;
-		identifier = identifier_;
-		arguments = arguments_;
+        identifier = identifier_;
+        arguments = arguments_;
     }
 
     function greet() public view returns (string memory) {
@@ -27,7 +31,11 @@ contract Greeter {
     }
 
     function greetReentry() public returns (string memory) {
-		IRefunder(msg.sender).relayAndRefund(address(this), identifier, arguments);
+        IRefunder(msg.sender).relayAndRefund(
+            address(this),
+            identifier,
+            arguments
+        );
 
         return greeting;
     }
