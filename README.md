@@ -39,8 +39,13 @@ The contract:
 Each refundable has:
 - `target` - contract address (f.e Compound Governance Alpha)
 - `identifier` - function identifier (f.e `castVoteBySig`)
-- `validationContract` - Optional validation contract to call when determening whether to refund the `msg.sender`
-- `validationIdentifier` - Optional validati identifier to call when determening whether to refund the `msg.sender`
+- `validatingContract` - Optional validation contract to call when determening whether to refund the `msg.sender`
+- `validatingIdentifier` - Optional validati identifier to call when determening whether to refund the `msg.sender`
+
+**Important**
+If you want to execute any additional business logic check except for requiring the gas price to be lower than the `maxGasPrice` set, you can specify `validatingContract` and `validatingIdentifier`. The contract + identifier will be called on every `relay and refund` call.
+The signature of the `validatingIdentifier` must be:
+`functionName(address,address,bytes4,bytes)` where the first `address` is the `msg.sender` that will be refunded, second `address` is the target contract, `bytes4` is the identifier to be called and the last are the `arguments` that will be passed to that function call.
 
 The contract measures the net gas usage and reimburses the `msg.sender` for all of the gas costs **except for the arguments** provided to the `relayAndRefund` function. This is where the `96-99%` fomes from. If the `arguments` gas costs are big, the refunding proportional to the transaction cost will be lower. 
 
