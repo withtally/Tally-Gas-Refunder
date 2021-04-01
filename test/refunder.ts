@@ -156,12 +156,15 @@ describe("Refunder", function () {
 		const value = 152;
 
 		let res = await refunder.setMaxGasPrice(value);
-		await res.wait();
+		let txReceipt = await res.wait();
+
+		const eventInfo = txReceipt.events[0];
+		expect(txReceipt.events && txReceipt.events.length === 1).to.be.ok;
+		expect(eventInfo.eventSignature,).to.be.eq("GasPriceChange(uint256)")
+		expect(eventInfo.args.newGasPrice.toString()).to.eq("152");
 
 		const updatedGasPrice = await refunder.maxGasPrice();
-
 		expect(updatedGasPrice.toString()).to.be.eq(value.toString());
-
 	});
 
 	it("Should not allow for non-owner to set max gas price", async function () {
