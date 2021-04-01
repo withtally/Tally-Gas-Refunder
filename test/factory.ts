@@ -32,7 +32,7 @@ describe('Factory', () => {
         await factory.deployed();
     });
 
-    it('Create Refunder', async () => {
+    it('Should create Refunder', async () => {
         let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
         let txReceipt = await res.wait();
 
@@ -47,7 +47,7 @@ describe('Factory', () => {
         expect(newRefunderOwnerFromContract).to.be.eq(newRefunderOwner);
     });
 
-    it(`Factory's registry should match`, async () => {
+    it(`Should set registry address`, async () => {
         let res = await factory.registry();
         expect(res, 'Registry not match').to.be.eq(registry.address);
     });

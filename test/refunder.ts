@@ -1,13 +1,10 @@
 
-import { defaultAccounts } from "@ethereum-waffle/provider";
-import { BigNumber } from "@ethersproject/bignumber";
 import { Contract } from "@ethersproject/contracts";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
 import {
-	INSUFFICIENT_BALANCE,
 	NOT_AN_OWNER,
 	NOT_REFUNDABLE,
 	TOO_EXPENSIVE_GAS_PRICE,
@@ -75,178 +72,159 @@ describe("Refunder", function () {
 
 	});
 
-	it('Owner should be the deployer', async () => {
+	it('Should set deployer as owner', async () => {
 		let getOwner = await refunder.owner();
 		expect(getOwner, "Owner do not match").to.be.eq(owner.address);
 	});
 
-	it('Registry should match', async () => {
+	it('Should set registry', async () => {
 		let getRegistry = await refunder.registry();
 		expect(getRegistry, "Registry do not match").to.be.eq(registry.address);
 	});
 
-	describe('Sending ETHs', () => {
+	it("Should be able to send ETH", async function () {
+		const depositEventFilter = refunder.filters.Deposit();
 
-		it("Should be able to deposit ethers", async function () {
-
-			const depositEventFilter = refunder.filters.Deposit();
-
-			const balanceOfRefunderBefore = await ethers.provider.getBalance(refunder.address);
-			const value = ethToWei('0.5');
-			const res = await addr1.sendTransaction({
-				value: value,
-				to: refunder.address
-			});
-
-			await res.wait();
-
-			const events = await refunder.queryFilter(depositEventFilter);
-
-			expect(events.length > 0, 'No events are emitted').to.be.ok;
-			expect(events[0].event, 'Invalid event name').to.be.eq('Deposit');
-
-			const balanceOfRefunderAfter = await ethers.provider.getBalance(refunder.address);
-
-			expect(balanceOfRefunderBefore.toString()).to.be.not.eq(balanceOfRefunderAfter.toString());
-			expect(value.toString()).to.be.eq(balanceOfRefunderAfter.toString());
-
-			const updatedBalanceOfRefunder = balanceOfRefunderBefore.add(value).toString();
-			expect(updatedBalanceOfRefunder).to.be.eq(balanceOfRefunderAfter);
+		const balanceOfRefunderBefore = await ethers.provider.getBalance(refunder.address);
+		const value = ethToWei('0.5');
+		const res = await addr1.sendTransaction({
+			value: value,
+			to: refunder.address
 		});
+
+		await res.wait();
+
+		const events = await refunder.queryFilter(depositEventFilter);
+
+		expect(events.length > 0, 'No events are emitted').to.be.ok;
+		expect(events[0].event, 'Invalid event name').to.be.eq('Deposit');
+
+		const balanceOfRefunderAfter = await ethers.provider.getBalance(refunder.address);
+
+		expect(balanceOfRefunderBefore.toString()).to.be.not.eq(balanceOfRefunderAfter.toString());
+		expect(value.toString()).to.be.eq(balanceOfRefunderAfter.toString());
+
+		const updatedBalanceOfRefunder = balanceOfRefunderBefore.add(value).toString();
+		expect(updatedBalanceOfRefunder).to.be.eq(balanceOfRefunderAfter);
 	});
 
-	describe('Withdraw ETHs', () => {
-
-		it("Owner should withdraw ETHs from Refunder", async function () {
-
-			const value = ethToWei('2');
-			const res = await owner.sendTransaction({
-				value: value,
-				to: refunder.address
-			});
-
-			await res.wait();
-
-			const balanceOfRefunderBefore = await ethers.provider.getBalance(refunder.address);
-
-			const withdrawRes = await refunder.withdraw(value);
-			let txReceipt = await withdrawRes.wait();
-
-			expect(txReceipt.events, 'No events are emitted').to.be.ok;
-			expect(txReceipt.events[0].event, 'Invalid event name').to.be.eq('Withdraw');
-
-			const balanceOfRefunderAfter = await ethers.provider.getBalance(refunder.address);
-
-			expect(value.toString()).to.be.eq(balanceOfRefunderBefore.toString());
-			expect('0').to.be.eq(balanceOfRefunderAfter.toString());
+	it("Owner should be able to withdraw ETHs", async function () {
+		const value = ethToWei('2');
+		const res = await owner.sendTransaction({
+			value: value,
+			to: refunder.address
 		});
 
-		it("Should not be able to withdraw ETHs if refunded balance is insufficient", async function () {
+		await res.wait();
 
-			const value = ethToWei('2');
-			const balanceOfRefunderBefore = await ethers.provider.getBalance(refunder.address);
+		const balanceOfRefunderBefore = await ethers.provider.getBalance(refunder.address);
 
-			expect('0').to.be.eq(balanceOfRefunderBefore.toString());
-			await expect(refunder.withdraw(value)).to.be.revertedWith(FUNCTION_CALL_FAILED);
+		const withdrawRes = await refunder.withdraw(value);
+		let txReceipt = await withdrawRes.wait();
 
-		});
+		expect(txReceipt.events, 'No events are emitted').to.be.ok;
+		expect(txReceipt.events[0].event, 'Invalid event name').to.be.eq('Withdraw');
 
-		it("Not Owner should NOT withdraw ETHs from Refunder", async function () {
-			const value = ethToWei('2');
-			const res = await owner.sendTransaction({
-				value: value,
-				to: refunder.address
-			});
+		const balanceOfRefunderAfter = await ethers.provider.getBalance(refunder.address);
 
-			await res.wait();
+		expect(value.toString()).to.be.eq(balanceOfRefunderBefore.toString());
+		expect('0').to.be.eq(balanceOfRefunderAfter.toString());
+	});
 
-			await expect(refunder.connect(addr1).withdraw(value)).to.be.revertedWith(NOT_AN_OWNER);
-		});
+	it("Should not be able to withdraw more ETHs than refunder balance", async function () {
+		const value = ethToWei('2');
+		const balanceOfRefunderBefore = await ethers.provider.getBalance(refunder.address);
+
+		expect('0').to.be.eq(balanceOfRefunderBefore.toString());
+		await expect(refunder.withdraw(value)).to.be.revertedWith(FUNCTION_CALL_FAILED);
 
 	});
 
-	describe('Max Gas Price', () => {
-
-		it("Owner should set max gas price", async function () {
-			const value = 152;
-
-			let res = await refunder.setMaxGasPrice(value);
-			await res.wait();
-
-			const updatedGasPrice = await refunder.maxGasPrice();
-
-			expect(updatedGasPrice.toString()).to.be.eq(value.toString());
-
+	it("Should not allow for not owners to withdraw ETHs", async function () {
+		const value = ethToWei('2');
+		const res = await owner.sendTransaction({
+			value: value,
+			to: refunder.address
 		});
 
-		it("Not Owner should NOT set max gas price", async function () {
-			await expect(refunder.connect(addr1).setMaxGasPrice(191)).to.be.revertedWith(NOT_AN_OWNER);
-		});
+		await res.wait();
+
+		await expect(refunder.connect(addr1).withdraw(value)).to.be.revertedWith(NOT_AN_OWNER);
 	});
 
-	describe('Whitelist Refundable', () => {
+	it("Should set max gas price", async function () {
+		const value = 152;
 
-		it("Owner should be able to add refundable", async function () {
+		let res = await refunder.setMaxGasPrice(value);
+		await res.wait();
 
-			const randomAddress = greeter.address;
-			const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
+		const updatedGasPrice = await refunder.maxGasPrice();
 
-			// address, bytes4
-			const resBefore = await refunder.refundables(randomAddress, randomFuncIdAsBytes);
+		expect(updatedGasPrice.toString()).to.be.eq(value.toString());
 
-			expect(resBefore.isSupported, 'Refundable is supported').to.be.eq(false);
+	});
 
-			const res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, true, ZERO_ADDRESS, ZERO_FUNC);
-			let txReceipt = await res.wait();
+	it("Should not allow for non-owner to set max gas price", async function () {
+		await expect(refunder.connect(addr1).setMaxGasPrice(191)).to.be.revertedWith(NOT_AN_OWNER);
+	});
 
-			expect(txReceipt.events, 'No events are emitted').to.be.ok;
-			expect(txReceipt.events[1].event, 'Invalid event name').to.be.eq('RefundableUpdate');
+	it("Should allow owner to add refundable", async function () {
+		const randomAddress = greeter.address;
+		const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
 
-			const resAfter = await refunder.refundables(randomAddress, randomFuncIdAsBytes);
-			expect(resAfter.isSupported, 'Refundable is not supported').to.be.eq(true);
+		// address, bytes4
+		const resBefore = await refunder.refundables(randomAddress, randomFuncIdAsBytes);
 
-		});
+		expect(resBefore.isSupported, 'Refundable is supported').to.be.eq(false);
 
-		it("Owner should be able to edit refundable", async function () {
+		const res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, true, ZERO_ADDRESS, ZERO_FUNC);
+		let txReceipt = await res.wait();
 
-			const randomAddress = greeter.address;
-			const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
+		expect(txReceipt.events, 'No events are emitted').to.be.ok;
+		expect(txReceipt.events[1].event, 'Invalid event name').to.be.eq('RefundableUpdate');
 
-			// address, bytes4
-			const resBefore = await refunder.refundables(randomAddress, randomFuncIdAsBytes);
-			expect(resBefore.isSupported, 'Refundable is supported').to.be.eq(false);
+		const resAfter = await refunder.refundables(randomAddress, randomFuncIdAsBytes);
+		expect(resAfter.isSupported, 'Refundable is not supported').to.be.eq(true);
 
-			let res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, true, ZERO_ADDRESS, ZERO_FUNC);
-			await res.wait();
+	});
 
-			const resAfter = await refunder.refundables(randomAddress, randomFuncIdAsBytes);
-			expect(resAfter.isSupported, 'Refundable is not supported').to.be.eq(true);
+	it("Should allow owner to edit refundable", async function () {
+		const randomAddress = greeter.address;
+		const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
 
-			res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, false, ZERO_ADDRESS, ZERO_FUNC);
-			await res.wait();
+		// address, bytes4
+		const resBefore = await refunder.refundables(randomAddress, randomFuncIdAsBytes);
+		expect(resBefore.isSupported, 'Refundable is supported').to.be.eq(false);
 
-			const resAfterEdit = await refunder.refundables(randomAddress, randomFuncIdAsBytes);
-			expect(resAfterEdit.isSupported, 'Refundable is supported').to.be.eq(false);
-		});
+		let res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, true, ZERO_ADDRESS, ZERO_FUNC);
+		await res.wait();
 
-		it("Not owner should NOT be able to add refundable", async function () {
+		const resAfter = await refunder.refundables(randomAddress, randomFuncIdAsBytes);
+		expect(resAfter.isSupported, 'Refundable is not supported').to.be.eq(true);
 
-			const randomAddress = greeter.address;
-			const randomFuncId = ethers.utils.id('setGreeting(string)');
-			const randomFuncIdAsBytes = ethers.utils.arrayify(randomFuncId.substr(0, 10));
+		res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, false, ZERO_ADDRESS, ZERO_FUNC);
+		await res.wait();
 
-			await expect(refunder.connect(addr1).updateRefundable(randomAddress, randomFuncIdAsBytes, true, ZERO_ADDRESS, ZERO_FUNC)).to.be.revertedWith(NOT_AN_OWNER);
-		});
+		const resAfterEdit = await refunder.refundables(randomAddress, randomFuncIdAsBytes);
+		expect(resAfterEdit.isSupported, 'Refundable is supported').to.be.eq(false);
+	});
 
-		it("Not owner should NOT be able to edit refundable", async function () {
-			const randomAddress = greeter.address;
-			const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
+	it("Should not allow for non-owner to add refundable", async function () {
+		const randomAddress = greeter.address;
+		const randomFuncId = ethers.utils.id('setGreeting(string)');
+		const randomFuncIdAsBytes = ethers.utils.arrayify(randomFuncId.substr(0, 10));
 
-			let res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, true, ZERO_ADDRESS, ZERO_FUNC);
-			await res.wait();
+		await expect(refunder.connect(addr1).updateRefundable(randomAddress, randomFuncIdAsBytes, true, ZERO_ADDRESS, ZERO_FUNC)).to.be.revertedWith(NOT_AN_OWNER);
+	});
 
-			await expect(refunder.connect(addr1).updateRefundable(randomAddress, randomFuncIdAsBytes, false, ZERO_ADDRESS, ZERO_FUNC)).to.be.revertedWith(NOT_AN_OWNER);
-		});
+	it("Show not allow for non-owner to edit refundable", async function () {
+		const randomAddress = greeter.address;
+		const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
+
+		let res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, true, ZERO_ADDRESS, ZERO_FUNC);
+		await res.wait();
+
+		await expect(refunder.connect(addr1).updateRefundable(randomAddress, randomFuncIdAsBytes, false, ZERO_ADDRESS, ZERO_FUNC)).to.be.revertedWith(NOT_AN_OWNER);
 	});
 
 	describe('Relay and refund', () => {
@@ -264,14 +242,14 @@ describe("Refunder", function () {
 			await res.wait();
 		});
 
-		it('Successfully refund whitelisted contract function', async () => {
-
+		it('Should relay and refund whitelisted contract function', async () => {
 			let res = await refunder.updateRefundable(greeter.address, setGreetingIdAsBytes, true, ZERO_ADDRESS, ZERO_FUNC);
 			await res.wait();
 
 			await validateRelayAndRefund(setGreetingIdAsBytes);
 		});
 
+		// TODO
 		it('Whitelisted function should revert, sender should NOT be refunded', async () => {
 
 			let res = await refunder.updateRefundable(greeter.address, setGreetingIdAsBytes, true, ZERO_ADDRESS, ZERO_FUNC);
@@ -290,12 +268,11 @@ describe("Refunder", function () {
 			expect(balanceAfter.lt(balanceBefore), 'Sender was over refunded');
 		});
 
-		it('Should reject non-refundable transaction', async () => {
+		it('Should reject non-refundable call', async () => {
 			await expect(refunder.connect(addr1).relayAndRefund(greeter.address, greetIdAsBytes, [])).to.be.revertedWith(NOT_REFUNDABLE);
 		});
 
-		it('Should NOT be refunded, gas price is too expensive', async () => {
-
+		it('Should not refund calls with gas price higher than allowed', async () => {
 			const userAddress = addr1.address;
 
 			let temp = await refunder.setMaxGasPrice('2000000000')
@@ -317,7 +294,7 @@ describe("Refunder", function () {
 			expect(balanceAfter.lt(balanceBefore), 'User was refunded').to.be.ok;
 		});
 
-		it('NOT approved user should NOT be refunded', async () => {
+		it('Should revert if validation contract rejects the refunding', async () => {
 
 			let res = await refunder.updateRefundable(greeter.address, setGreetingIdAsBytes, true, permitter.address, isApprovedIdAsBytes);
 			await res.wait();
@@ -329,7 +306,7 @@ describe("Refunder", function () {
 			await expect(refunder.connect(addr1).relayAndRefund(greeter.address, setGreetingIdAsBytes, args)).to.be.revertedWith(NOT_ELIGIABLE_FOR_REFUNDING);
 		});
 
-		it('After permit user should be refunded', async () => {
+		it('Should relay and refund when validation contract allows it', async () => {
 
 			await permitter.updateRefundableUser(addr1.address, true);
 
@@ -339,14 +316,12 @@ describe("Refunder", function () {
 			await validateRelayAndRefund(setGreetingIdAsBytes);
 		});
 
-		it('Should NOT be refunded, validation function throw error', async () => {
+		it('Should revert if validation contract reverts', async () => {
 
 			await permitter.updateRefundableUser(addr1.address, true);
 
 			let res = await refunder.updateRefundable(greeter.address, setGreetingIdAsBytes, true, permitter.address, throwErrorIdAsBytes);
 			await res.wait();
-
-			const balanceBefore = await ethers.provider.getBalance(addr1.address);
 
 			const text = 'Hello, Tester!';
 			const hexString = strToHex(text);
@@ -356,8 +331,7 @@ describe("Refunder", function () {
 
 		});
 
-		it('Call reentry permitter, Refunder should revert on validation call', async () => {
-
+		it('Should revert if there is reentrency attack by validating contract', async () => {
 			await permitter.updateRefundableUser(addr1.address, true);
 
 			let res = await refunder.updateRefundable(greeter.address, greetIdAsBytes, true, permitter.address, reentryApproverIdAsBytes);
@@ -371,15 +345,13 @@ describe("Refunder", function () {
 
 		});
 
-		it('Call reentry refund function', async () => {
-
+		it('Should revert if there is reentrency attack by the target contract', async () => {
 			await permitter.updateRefundableUser(addr1.address, true);
 
 			let res = await refunder.updateRefundable(greeter.address, reentryGreeterIdAsBytes, true, permitter.address, isApprovedIdAsBytes);
 			await res.wait();
 
 			await expect(refunder.connect(addr1).relayAndRefund(greeter.address, reentryGreeterIdAsBytes, [])).to.be.revertedWith(FUNC_CALL_NOT_SUCCESSFUL);
-
 		});
 	});
 
@@ -399,7 +371,7 @@ describe("Refunder", function () {
 			await res.wait();
 		});
 
-		it('Pause', async () => {
+		it('Should be able to pause refunding', async () => {
 			await prepareRefundable();
 
 			await refunder.pause();
@@ -407,7 +379,7 @@ describe("Refunder", function () {
 			await expect(refunder.relayAndRefund(greeter.address, setGreetingIdAsBytes, args)).to.be.revertedWith(PAUSED);
 		});
 
-		it('Unpause', async () => {
+		it('Should be able to unpause refunding', async () => {
 			await prepareRefundable();
 
 			await refunder.pause();
