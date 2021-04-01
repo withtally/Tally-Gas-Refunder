@@ -249,9 +249,7 @@ describe("Refunder", function () {
 			await validateRelayAndRefund(setGreetingIdAsBytes);
 		});
 
-		// TODO
-		it('Whitelisted function should revert, sender should NOT be refunded', async () => {
-
+		it('Should revert when target contract call reverts', async () => {
 			let res = await refunder.updateRefundable(greeter.address, setGreetingIdAsBytes, true, ZERO_ADDRESS, ZERO_FUNC);
 			await res.wait();
 

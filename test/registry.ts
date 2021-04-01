@@ -52,12 +52,12 @@ describe('Registry', () => {
         await greeter.deployed();
     });
 
-    it('There should be no Refunder/s', async () => {
+    it('Should have 0 refunders after deployment', async () => {
         let res = await registry.getRefundersCount();
         expect(res).to.be.eq(0);
     });
 
-    it(`There should be ${randomNum} registered Refunder/s`, async () => {
+    it(`Should register ${randomNum} refunders`, async () => {
 
         for (let i = 0; i < randomNum; i++) {
             let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
@@ -78,7 +78,7 @@ describe('Registry', () => {
         }
     });
 
-    it('Should be 0 refundables', async () => {
+    it('Should return 0 refundables for non-refundable call', async () => {
 
         const randomFuncId = ethers.utils.id('setGreeting(string)');
         const randomFuncIdAsBytes = ethers.utils.arrayify(randomFuncId.substr(0, 10));
@@ -87,7 +87,7 @@ describe('Registry', () => {
         expect(res.length).to.be.eq(0);
     });
 
-    it('Should get all refundables for target + funcId', async () => {
+    it('Should get all refundables for target + identifier', async () => {
 
         for (let i = 0; i < randomNum; i++) {
             let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
@@ -106,7 +106,7 @@ describe('Registry', () => {
         }
     });
 
-    it('Successfully update refundable', async () => {
+    it('Should successfully update refundable', async () => {
         let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
         let txReceipt = await res.wait();
 
@@ -128,7 +128,7 @@ describe('Registry', () => {
         expect(res.length).to.be.eq(0);
     });
 
-    it('Not refunder should NOT be able to call updateRefundable', async () => {
+    it('Should not allow non-refunder to update refundable', async () => {
         let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
         let txReceipt = await res.wait();
 
@@ -141,7 +141,7 @@ describe('Registry', () => {
         await expect(registry.updateRefundable(greeter.address, randomFuncIdAsBytes, false)).to.be.revertedWith(REFUNDER_NOT_A_CALLER);
     });
 
-    it('Should get Refunder count for correct', async () => {
+    it('Should return refunders count correctly', async () => {
         let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
         let txReceipt = await res.wait();
 
@@ -159,7 +159,7 @@ describe('Registry', () => {
         expect(getRefunderCountFor, "Invalid count for refunder for").to.be.eq(1);
     });
 
-    it('Should get refunder for at index', async () => {
+    it('Should get refunder for target+identifier at index', async () => {
         let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
         let txReceipt = await res.wait();
 
