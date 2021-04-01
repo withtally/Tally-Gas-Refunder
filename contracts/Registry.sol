@@ -36,7 +36,7 @@ contract Registry is IRegistry {
     modifier onlyRefunder() {
         require(
             refunders.contains(msg.sender) && refunderVersion[msg.sender] > 0,
-            "Refunder not a caller"
+            "Registry: Not refunder"
         );
         _;
     }
@@ -45,7 +45,7 @@ contract Registry is IRegistry {
     /// @param refunder the address of the new refunder
     /// @param version the version of the refunder
     function register(address refunder, uint8 version) external override {
-        require(version != 0, "Version cannot be '0'");
+        require(version != 0, "Registry: Invalid version");
 
         if (!refunders.contains(refunder)) {
             refunders.add(refunder);
@@ -102,7 +102,7 @@ contract Registry is IRegistry {
     ) external view override returns (address) {
         require(
             index < aggregatedRefundables[target][identifier].length(),
-            "Invalid refunder index"
+            "Registry: Invalid index"
         );
 
         return aggregatedRefundables[target][identifier].at(index);
@@ -118,7 +118,7 @@ contract Registry is IRegistry {
         override
         returns (address)
     {
-        require(index < refunders.length(), "Invalid refunder index");
+        require(index < refunders.length(), "Registry: Invalid index");
 
         return refunders.at(index);
     }

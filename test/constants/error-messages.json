@@ -1,13 +1,13 @@
 {
     "NOT_AN_OWNER": "caller is not the owner",
     "INSUFFICIENT_BALANCE": "insufficient balance",
-    "NOT_REFUNDABLE": "It's not refundable",
-    "TOO_EXPENSIVE_GAS_PRICE": "Gas price is too expensive",
-    "FUNC_CALL_NOT_SUCCESSFUL": "Function call not successful",
+    "NOT_REFUNDABLE": "Refunder: Non-refundable call",
+    "TOO_EXPENSIVE_GAS_PRICE": "Refunder: Invalid gas price",
+    "FUNC_CALL_NOT_SUCCESSFUL": "Refunder: Function call not successful",
     "PAUSED": "Pausable: paused",
-    "REFUNDER_NOT_A_CALLER": "Refunder not a caller",
-    "INVALID_REFUNDER_INDEX": "Invalid refunder index",
-    "NOT_ELIGIABLE_FOR_REFUNDING": "Not eligible for refunding",
-    "CONTRACT_REVERTED": "Validation contract reverted",
+    "REFUNDER_NOT_A_CALLER": "Registry: Not refunder",
+    "INVALID_REFUNDER_INDEX": "Registry: Invalid index",
+    "NOT_ELIGIABLE_FOR_REFUNDING": "Refunder: Validating contract rejected the refund",
+    "CONTRACT_REVERTED": "Refunder: Validating contract reverted",
     "FUNCTION_CALL_FAILED": "function call failed to execute"
 }

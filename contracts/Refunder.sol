@@ -37,13 +37,13 @@ contract Refunder is
     /**
      * @notice Struct storing the refundable data for a given target
      * isSupported marks whether the refundable is supported or not
-     * validationContract contract address to call for business logic validation on every refund
-     * validationFunc function to call for business logic validation on every refund
+     * validatingContract contract address to call for business logic validation on every refund
+     * validatingIdentifier identifier to call for business logic validation on every refund
      */
     struct Refundable {
         bool isSupported;
-        address validationContract;
-        bytes4 validationFunc;
+        address validatingContract;
+        bytes4 validatingIdentifier;
     }
 
     /// @notice refundables mapping storing all of the supported `target` + `identifier` refundables
@@ -55,11 +55,16 @@ contract Refunder is
     /// @notice Withdraw event emitted once the owner withdraws ETH from the contract
     event Withdraw(address indexed owner, uint256 value);
 
+    /// @notice GasPriceChange event emitted once the Max Gas Price is updated
+    event GasPriceChange(uint256 newGasPrice);
+
     /// @notice RefundableUpdate event emitted once the owner updates the refundables
     event RefundableUpdate(
         address indexed targetContract,
         bytes4 indexed identifier,
-        bool indexed isRefundable
+        bool isRefundable,
+        address validatingContract,
+        bytes4 validatingIdentifier
     );
 
     /// @notice RelayAndRefund event emitted once someone executes transaction for which the contract will refund him of up to 99% of the cost
@@ -76,10 +81,10 @@ contract Refunder is
      * @param identifier the function to be called
      */
     modifier onlySupportedParams(address targetContract, bytes4 identifier) {
-        require(tx.gasprice <= maxGasPrice, "Gas price is too expensive");
+        require(tx.gasprice <= maxGasPrice, "Refunder: Invalid gas price");
         require(
             refundables[targetContract][identifier].isSupported,
-            "It's not refundable"
+            "Refunder: Non-refundable call"
         );
 
         _;
@@ -139,6 +144,7 @@ contract Refunder is
      */
     function setMaxGasPrice(uint256 gasPrice) external override onlyOwner {
         maxGasPrice = gasPrice;
+        emit GasPriceChange(gasPrice);
     }
 
     /**
@@ -151,13 +157,13 @@ contract Refunder is
         address targetContract,
         bytes4 identifier,
         bool isRefundable_,
-        address validationContract,
-        bytes4 validationFunc
+        address validatingContract,
+        bytes4 validatingIdentifier
     ) external override onlyOwner {
         refundables[targetContract][identifier] = Refundable(
             isRefundable_,
-            validationContract,
-            validationFunc
+            validatingContract,
+            validatingIdentifier
         );
         IRegistry(registry).updateRefundable(
             targetContract,
@@ -165,7 +171,13 @@ contract Refunder is
             isRefundable_
         );
 
-        emit RefundableUpdate(targetContract, identifier, isRefundable_);
+        emit RefundableUpdate(
+            targetContract,
+            identifier,
+            isRefundable_,
+            validatingContract,
+            validatingIdentifier
+        );
     }
 
     /**
@@ -189,28 +201,34 @@ contract Refunder is
         returns (bytes memory)
     {
         Refundable memory _refundableData = refundables[target][identifier];
-        if (_refundableData.validationContract != address(0)) {
+        if (_refundableData.validatingContract != address(0)) {
             bytes memory dataValidation =
                 abi.encodeWithSelector(
-                    _refundableData.validationFunc,
+                    _refundableData.validatingIdentifier,
                     msg.sender,
                     target,
                     identifier,
                     arguments
                 );
             (bool successValidation, bytes memory returnDataValidation) =
-                _refundableData.validationContract.call(dataValidation);
+                _refundableData.validatingContract.call(dataValidation);
 
             bool decodedResult = abi.decode(returnDataValidation, (bool));
 
-            require(successValidation, "Validation contract reverted");
-            require(decodedResult, "Not eligible for refunding");
+            require(
+                successValidation,
+                "Refunder: Validating contract reverted"
+            );
+            require(
+                decodedResult,
+                "Refunder: Validating contract rejected the refund"
+            );
         }
 
         bytes memory data = abi.encodeWithSelector(identifier, arguments);
         (bool success, bytes memory returnData) = target.call(data);
 
-        require(success, "Function call not successful");
+        require(success, "Refunder: Function call not successful");
         emit RelayAndRefund(msg.sender, target, identifier);
         return returnData;
     }
