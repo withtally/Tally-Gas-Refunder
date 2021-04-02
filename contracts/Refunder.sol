@@ -53,7 +53,7 @@ contract Refunder is
     event Deposit(address indexed depositor, uint256 value);
 
     /// @notice Withdraw event emitted once the owner withdraws ETH from the contract
-    event Withdraw(address indexed owner, uint256 value);
+    event Withdraw(address indexed recipient, uint256 amount);
 
     /// @notice GasPriceChange event emitted once the Max Gas Price is updated
     event GasPriceChange(uint256 newGasPrice);
@@ -71,7 +71,8 @@ contract Refunder is
     event RelayAndRefund(
         address indexed caller,
         address indexed target,
-        bytes4 indexed identifier
+        bytes4 indexed identifier,
+        uint256 refundAmount
     );
 
     /**
@@ -93,8 +94,9 @@ contract Refunder is
     /**
      * @notice calculates the net gas cost for refunding and refunds the msg.sender afterwards
      */
-    modifier netGasCost() {
+    modifier netGasCost(address target, bytes4 identifier) {
         uint256 gasProvided = gasleft();
+
         _;
 
         uint256 gasUsedSoFar = gasProvided - gasleft();
@@ -103,6 +105,7 @@ contract Refunder is
                 tx.gasprice;
 
         refund(msg.sender, refundAmount);
+        emit RelayAndRefund(msg.sender, target, identifier, refundAmount);
     }
 
     /// @notice receive function for depositing ETH into the contract
@@ -194,7 +197,7 @@ contract Refunder is
     )
         external
         override
-        netGasCost
+        netGasCost(target, identifier)
         nonReentrant
         onlySupportedParams(target, identifier)
         whenNotPaused
@@ -229,7 +232,6 @@ contract Refunder is
         (bool success, bytes memory returnData) = target.call(data);
 
         require(success, "Refunder: Function call not successful");
-        emit RelayAndRefund(msg.sender, target, identifier);
         return returnData;
     }
 

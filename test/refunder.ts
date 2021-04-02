@@ -19,7 +19,8 @@ import {
 	ethToWei,
 	generateFuncIdAsBytes,
 	getXPercentFrom,
-	strToHex
+	strToHex,
+	parseEvent
 } from './utils/utils';
 
 import {
@@ -95,9 +96,10 @@ describe("Refunder", function () {
 		await res.wait();
 
 		const events = await refunder.queryFilter(depositEventFilter);
-
-		expect(events.length > 0, 'No events are emitted').to.be.ok;
-		expect(events[0].event, 'Invalid event name').to.be.eq('Deposit');
+		const event = parseEvent(events, 'Deposit(address,uint256)');
+		expect(event, "event not emitted").to.be.not.null
+		expect(event.args.depositor).to.be.eq(addr1.address);
+		expect(event.args.value).to.be.eq(value);
 
 		const balanceOfRefunderAfter = await ethers.provider.getBalance(refunder.address);
 
@@ -122,8 +124,10 @@ describe("Refunder", function () {
 		const withdrawRes = await refunder.withdraw(value);
 		let txReceipt = await withdrawRes.wait();
 
-		expect(txReceipt.events, 'No events are emitted').to.be.ok;
-		expect(txReceipt.events[0].event, 'Invalid event name').to.be.eq('Withdraw');
+		const event = parseEvent(txReceipt.events, "Withdraw(address,uint256)");
+		expect(event, "event not emitted").to.be.not.null
+		expect(event.args.recipient).to.be.eq(owner.address)
+		expect(event.args.amount).to.be.eq(value)
 
 		const balanceOfRefunderAfter = await ethers.provider.getBalance(refunder.address);
 
@@ -158,10 +162,9 @@ describe("Refunder", function () {
 		let res = await refunder.setMaxGasPrice(value);
 		let txReceipt = await res.wait();
 
-		const eventInfo = txReceipt.events[0];
-		expect(txReceipt.events && txReceipt.events.length === 1).to.be.ok;
-		expect(eventInfo.eventSignature,).to.be.eq("GasPriceChange(uint256)")
-		expect(eventInfo.args.newGasPrice.toString()).to.eq("152");
+		const event = parseEvent(txReceipt.events, "GasPriceChange(uint256)");
+		expect(event, "event not emitted").to.be.not.null;
+		expect(event.args.newGasPrice.toString()).to.eq("152");
 
 		const updatedGasPrice = await refunder.maxGasPrice();
 		expect(updatedGasPrice.toString()).to.be.eq(value.toString());
@@ -182,9 +185,8 @@ describe("Refunder", function () {
 
 		const res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, true, ZERO_ADDRESS, ZERO_FUNC);
 		let txReceipt = await res.wait();
-
-		expect(txReceipt.events, 'No events are emitted').to.be.ok;
-		expect(txReceipt.events[1].event, 'Invalid event name').to.be.eq('RefundableUpdate');
+		const event = parseEvent(txReceipt.events, "RefundableUpdate(address,bytes4,bool,address,bytes4)")
+		expect(event, 'event not emitted').to.be.not.null
 
 		const resAfter = await refunder.refundables(randomAddress, randomFuncIdAsBytes);
 		expect(resAfter.isSupported, 'Refundable is not supported').to.be.eq(true);
@@ -420,8 +422,8 @@ describe("Refunder", function () {
 		const reimbursement = balanceAfter.sub(balanceBefore.sub(cost));
 		expect(reimbursement.lt(cost), 'Sender was over refunded').to.be.ok;
 
-		expect(txReceipt.events, 'No events are emitted').to.be.ok;
-		expect(txReceipt.events[0].event, 'Invalid event name').to.be.eq('RelayAndRefund');
+		const event = parseEvent(txReceipt.events, "RelayAndRefund(address,address,bytes4,uint256)")
+		expect(event, "no event emitted").to.be.not.null
 
 		const difference = balanceBefore.sub(balanceAfter);
 		const percent = 5;
@@ -430,5 +432,8 @@ describe("Refunder", function () {
 
 		res = await greeter.greet();
 		expect(res).to.be.equal(text);
+
+		console.log("Gas Used:", txReceipt.cumulativeGasUsed.toString())
+		console.log("Gas reimbursed:",)
 	}
 });

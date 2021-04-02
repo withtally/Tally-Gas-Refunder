@@ -3,6 +3,7 @@ import { ethers } from "hardhat";
 import { Contract, ContractFactory } from "@ethersproject/contracts";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
+import { parseEvent } from './utils/utils';
 
 const REFUNDER_VERSION = 1;
 
@@ -36,15 +37,14 @@ describe('Factory', () => {
         let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
         let txReceipt = await res.wait();
 
-        const createRefunderEventIndex = 3;
-        const newRefunderAddress = txReceipt.events[createRefunderEventIndex].args.refunderAddress;
-        const newRefunderOwner = txReceipt.events[createRefunderEventIndex].args.owner;
+        const event = parseEvent(txReceipt.events, "CreateRefunder(address,address)")
+        expect(event, "no event emitted").to.be.not.null
 
-        const newRefunder = await ethers.getContractAt("Refunder", newRefunderAddress);
+        const newRefunder = await ethers.getContractAt("Refunder", event.args.refunderAddress);
         const newRefunderOwnerFromContract = await newRefunder.owner();
 
         expect(newRefunderOwnerFromContract).to.be.eq(notOwner.address);
-        expect(newRefunderOwnerFromContract).to.be.eq(newRefunderOwner);
+        expect(newRefunderOwnerFromContract).to.be.eq(event.args.owner);
     });
 
     it(`Should set registry address`, async () => {

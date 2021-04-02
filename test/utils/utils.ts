@@ -40,10 +40,21 @@ const getRandomNum = () => {
 	return randomNum;
 }
 
+const parseEvent = (events: any[], eventSignature: string) => {
+	if (Array.isArray(events)) {
+		const event = events.find((e: any) => {
+			return e.eventSignature === eventSignature;
+		});
+		return event || null;
+	}
+	return null;
+}
+
 export {
 	ethToWei,
 	generateFuncIdAsBytes,
 	strToHex,
 	getXPercentFrom,
-	getRandomNum
+	getRandomNum,
+	parseEvent
 }

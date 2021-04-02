@@ -5,7 +5,8 @@ import { expect } from "chai";
 
 import {
     generateFuncIdAsBytes,
-    getRandomNum
+    getRandomNum,
+    parseEvent
 } from './utils/utils';
 
 import {
@@ -67,13 +68,13 @@ describe('Registry', () => {
             let refunderAt = await registry.getRefunder(i);
 
             expect(resRefundersCount).to.be.eq(i + 1);
-            expect(refunderAt, "Invalid refunder address").to.be.eq(txReceipt.events[3].args.refunderAddress);
+            const event = parseEvent(txReceipt.events, "CreateRefunder(address,address)")
+            expect(event.args.refunderAddress, "Invalid refunder address").to.be.eq(refunderAt);
 
             res = await registry.refunderVersion(refunderAt);
             expect(res, "Invalid refunder version").to.be.eq(REFUNDER_VERSION);
 
             let refunderAtIndex = await registry.getRefunder(resRefundersCount - 1);
-
             expect(refunderAtIndex, "Invalid refunder at index").to.be.eq(refunderAt);
         }
     });
@@ -92,8 +93,8 @@ describe('Registry', () => {
         for (let i = 0; i < randomNum; i++) {
             let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
             let txReceipt = await res.wait();
-
-            const newRefunderAddress = txReceipt.events[3].args.refunderAddress;
+            const event = parseEvent(txReceipt.events, "CreateRefunder(address,address)")
+            const newRefunderAddress = event.args.refunderAddress;
             const newRefunder = await ethers.getContractAt("Refunder", newRefunderAddress);
             const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
             res = await newRefunder.connect(notOwner).updateRefundable(greeter.address, randomFuncIdAsBytes, true, ZERO_ADDRESS, ZERO_FUNC);
@@ -110,7 +111,9 @@ describe('Registry', () => {
         let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
         let txReceipt = await res.wait();
 
-        const newRefunderAddress = txReceipt.events[3].args.refunderAddress;
+        const event = parseEvent(txReceipt.events, "CreateRefunder(address,address)")
+        const newRefunderAddress = event.args.refunderAddress;
+
         const newRefunder = await ethers.getContractAt("Refunder", newRefunderAddress);
         const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
         res = await newRefunder.connect(notOwner).updateRefundable(greeter.address, randomFuncIdAsBytes, true, ZERO_ADDRESS, ZERO_FUNC);
@@ -132,7 +135,9 @@ describe('Registry', () => {
         let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
         let txReceipt = await res.wait();
 
-        const newRefunderAddress = txReceipt.events[3].args.refunderAddress;
+        const event = parseEvent(txReceipt.events, "CreateRefunder(address,address)")
+        const newRefunderAddress = event.args.refunderAddress;
+
         const newRefunder = await ethers.getContractAt("Refunder", newRefunderAddress);
         const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
         res = await newRefunder.connect(notOwner).updateRefundable(greeter.address, randomFuncIdAsBytes, true, ZERO_ADDRESS, ZERO_FUNC);
@@ -145,7 +150,9 @@ describe('Registry', () => {
         let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
         let txReceipt = await res.wait();
 
-        const newRefunderAddress = txReceipt.events[3].args.refunderAddress;
+        const event = parseEvent(txReceipt.events, "CreateRefunder(address,address)")
+        const newRefunderAddress = event.args.refunderAddress;
+
         const newRefunder = await ethers.getContractAt("Refunder", newRefunderAddress);
         const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
 
@@ -163,7 +170,9 @@ describe('Registry', () => {
         let res = await factory.connect(notOwner).createRefunder(masterRefunder.address, REFUNDER_VERSION);
         let txReceipt = await res.wait();
 
-        const newRefunderAddress = txReceipt.events[3].args.refunderAddress;
+        const event = parseEvent(txReceipt.events, "CreateRefunder(address,address)")
+        const newRefunderAddress = event.args.refunderAddress;
+
         const newRefunder = await ethers.getContractAt("Refunder", newRefunderAddress);
         const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
 
