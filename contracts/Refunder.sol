@@ -54,7 +54,7 @@ contract Refunder is
 
     /// @notice Withdraw event emitted once the owner withdraws ETH from the contract
     event Withdraw(address indexed recipient, uint256 amount);
-
+    
     /// @notice GasPriceChange event emitted once the Max Gas Price is updated
     event GasPriceChange(uint256 newGasPrice);
 

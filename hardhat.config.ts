@@ -2,6 +2,7 @@ import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-ethers";
 import "solidity-coverage";
+import "@nomiclabs/hardhat-etherscan";
 
 const lazyImport = async (module: string) => {
 	const importedDefault = await import(module);
