@@ -4,20 +4,15 @@ pragma solidity ^0.7.4;
 
 import "./IRefunder.sol";
 import "./IRegistry.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 
 /**
  *  @title Refunder - core contract for refunding arbitrary contract+indentifier calls
  *  between 96%-99% of the gas costs of the transaction
  */
-contract Refunder is
-    ReentrancyGuard,
-    OwnableUpgradeable,
-    PausableUpgradeable,
-    IRefunder
-{
+contract Refunder is ReentrancyGuard, Ownable, Pausable, IRefunder {
     /// @notice Address of the refunder registry
     address public registry;
 
@@ -29,10 +24,10 @@ contract Refunder is
      *  Important: Gas costs for the transaction arguments are not included!
      *  Calculation: base 21_000 + 128 (8 non_zero_identifier_bytes) + 96 (24 zero_identifier_bytes) + 649 (gas costs until gasProvided variable)
      */
-    uint256 public BASE_REFUND_TX_COST = 21873;
+    uint256 public constant BASE_TX_COST = 21873;
 
     /// @notice The gas cost for executing refund internal function
-    uint256 public REFUND_OP_GAS_COST = 5106;
+    uint256 public constant REFUND_OP_COST = 5106;
 
     /**
      * @notice Struct storing the refundable data for a given target
@@ -76,6 +71,14 @@ contract Refunder is
     );
 
     /**
+     * @notice Constructor
+     * @param _registry The address of the registry
+     */
+    constructor(address _registry) {
+        registry = _registry;
+    }
+
+    /**
      * @notice Validates that the provided target+identifier is marked as refundable and that the gas price is
      * lower than the maximum allowed one
      * @param targetContract the contract that will be called
@@ -100,9 +103,8 @@ contract Refunder is
         _;
 
         uint256 gasUsedSoFar = gasProvided - gasleft();
-        uint256 refundAmount =
-            (gasUsedSoFar + BASE_REFUND_TX_COST + REFUND_OP_GAS_COST) *
-                tx.gasprice;
+        uint256 gas = gasUsedSoFar + BASE_TX_COST + REFUND_OP_COST;
+        uint256 refundAmount = gas * tx.gasprice;
 
         refund(msg.sender, refundAmount);
         emit RelayAndRefund(msg.sender, target, identifier, refundAmount);
@@ -111,24 +113,6 @@ contract Refunder is
     /// @notice receive function for depositing ETH into the contract
     receive() external payable {
         emit Deposit(msg.sender, msg.value);
-    }
-
-    /**
-     * @notice init function called only once. Sets the owner of the refunder and the refunder registry contract
-     * @param owner_ the address that will be set as a owner of the contract
-     * @param registry_ the refunder registry contract
-     */
-    function init(address owner_, address registry_)
-        external
-        override
-        initializer
-    {
-        __Ownable_init();
-        if (owner() != owner_) {
-            transferOwnership(owner_);
-        }
-
-        registry = registry_;
     }
 
     /**

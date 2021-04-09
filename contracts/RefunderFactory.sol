@@ -3,18 +3,20 @@
 pragma solidity ^0.7.4;
 
 import "./IRegistry.sol";
-import "./IRefunder.sol";
-import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import "./Refunder.sol";
 
 /**
- *  @title RefunderFactory - factory contract for deploying refunder contracts. The factory uses EIP-1167 minimal proxy contract
+ *  @title RefunderFactory - factory contract for deploying refunder contracts
  */
 contract RefunderFactory {
     /// @notice Address of the refunder registry
     address public registry;
 
+    /// @notice The version of the refunder
+    uint8 public constant REFUNDER_VERSION = 1;
+
     /// @notice Event emitted once new refunder is deployed
-    event CreateRefunder(
+    event RefunderCreated(
         address indexed owner,
         address indexed refunderAddress
     );
@@ -25,19 +27,14 @@ contract RefunderFactory {
 
     /**
      * @notice Creates new instance of a refunder contract
-     * @param masterRefunder the address of the master copy (EIP-1167)
-     * @param version the version of the refunder
      */
-    function createRefunder(address masterRefunder, uint8 version)
-        external
-        returns (address)
-    {
-        address newRefunder = Clones.clone(masterRefunder);
-        IRefunder(newRefunder).init(msg.sender, registry);
+    function createRefunder() external returns (address) {
+        Refunder refunder = new Refunder(registry);
+        refunder.transferOwnership(msg.sender);
 
-        IRegistry(registry).register(newRefunder, version);
-        emit CreateRefunder(msg.sender, newRefunder);
+        IRegistry(registry).register(address(refunder), REFUNDER_VERSION);
 
-        return newRefunder;
+        emit RefunderCreated(msg.sender, address(refunder));
+        return address(refunder);
     }
 }
