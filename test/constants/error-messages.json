@@ -1,6 +1,6 @@
 {
     "NOT_AN_OWNER": "caller is not the owner",
-    "INSUFFICIENT_BALANCE": "insufficient balance",
+    "INSUFFICIENT_BALANCE": "Refunder: Insufficient balance",
     "NOT_REFUNDABLE": "Refunder: Non-refundable call",
     "TOO_EXPENSIVE_GAS_PRICE": "Refunder: Invalid gas price",
     "FUNC_CALL_NOT_SUCCESSFUL": "Refunder: Function call not successful",
