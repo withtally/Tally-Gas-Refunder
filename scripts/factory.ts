@@ -9,6 +9,7 @@ async function factory(registryAddress: string) {
 
   const Factory = await ethers.getContractFactory("RefunderFactory");
   const factory = await Factory.deploy(registryAddress);
+  console.log("Deploying Factory: ", factory.deployTransaction.hash);
   await factory.deployed();
 
   console.log("Factory deployed to:", factory.address);

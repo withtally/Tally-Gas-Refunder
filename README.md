@@ -94,13 +94,8 @@ In order to deploy the factory:
 npx hardhat deploy-factory --network MY_NETWORK_NAME --registry REGISTRY_ADDRESS
 ```
 
-In order to deploy master refunder copy:
-```
-npx hardhat deploy-master-refunder --network MY_NETWORK_NAME
-```
-
 In Order to deploy refunder:
 ```
-npx hardhat deploy-refunder --network MY_NETWORK_NAME --factory FACTORY_ADDRESS --masterRefunder MASTER_REFUNDER_ADDRESS --refunderVersion VERSION_OF_THE_REFUNDER
+npx hardhat deploy-refunder --network MY_NETWORK_NAME --factory FACTORY_ADDRESS
 ```
 Note: By default, the version of the refunder is `1`

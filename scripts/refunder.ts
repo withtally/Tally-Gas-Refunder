@@ -2,7 +2,7 @@
 import hre from 'hardhat'
 const ethers = hre.ethers;
 
-async function refunder(factoryAddress: string, masterRefunderAddress: string, refunderVersion = 1) {
+async function refunder(factoryAddress: string) {
 
 	// Compile our Contracts, just in case
 	await hre.run('compile');
@@ -11,13 +11,10 @@ async function refunder(factoryAddress: string, masterRefunderAddress: string, r
 		throw Error('Missing FACTORY ADDRESS');
 	}
 
-	if (!masterRefunderAddress) {
-		throw Error('Missing MASTER REFUNDER ADDRESS');
-	}
-
 	const factory = await ethers.getContractAt("RefunderFactory", factoryAddress);
 
-	let res = await factory.createRefunder(masterRefunderAddress, refunderVersion);
+	let res = await factory.createRefunder();
+	console.log("Creating Refunder: ", res.hash);
 	let txReceipt = await res.wait();
 
 	txReceipt.events.forEach((e: any) => {

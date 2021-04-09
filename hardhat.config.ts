@@ -24,27 +24,13 @@ task("deploy-factory", "Deploys a Refunder's Factory")
 		await factoryDeployer(taskArgs.registry);
 	});
 
-task("deploy-master-refunder", "Deploys a Master Refunder")
-	.setAction(async taskArgs => {
-
-		const masterRefunderDeployer = await lazyImport('./scripts/master-refunder');
-
-		await masterRefunderDeployer();
-	});
-
 task("deploy-refunder", "Deploys a Refunder")
 	.addParam("factory", "The address of refunders Factory")
-	.addParam("masterrefunder", "The address of initial Refunder")
-	.addOptionalParam("refunderVersion", "Refunder's version. default is 1")
 	.setAction(async taskArgs => {
 
 		const refunderDeployer = await lazyImport('./scripts/refunder');
 
-		await refunderDeployer(
-			taskArgs.factory,
-			taskArgs.masterrefunder,
-			taskArgs.refunderVersion
-		);
+		await refunderDeployer(taskArgs.factory);
 	});
 
 export default {
