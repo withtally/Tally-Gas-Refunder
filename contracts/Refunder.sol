@@ -26,9 +26,9 @@ contract Refunder is ReentrancyGuard, Ownable, Pausable, IRefunder {
     /**
      *  @notice The base gas cost of the `relayAndRefun` transaction up until the point where the first `gasLeft` is executed
      *  Important: Gas costs for the transaction arguments are not included!
-     *  Calculation: base 21_000 + 128 (8 non_zero_identifier_bytes) + 96 (24 zero_identifier_bytes) + 649 (gas costs until gasProvided variable)
+     *  Calculation: base 21_000 + 128 (8 non_zero_identifier_bytes) + 96 (24 zero_identifier_bytes) + 762 (gas costs until gasProvided variable)
      */
-    uint256 public constant BASE_TX_COST = 21873;
+    uint256 public constant BASE_TX_COST = 21986;
 
     /// @notice The gas cost for executing refund internal function + emitting RelayAndRefund event
     uint256 public constant REFUND_OP_COST = 6440;
