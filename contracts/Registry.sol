@@ -28,7 +28,7 @@ contract Registry is IRegistry {
     event UpdateRefundable(
         address indexed refunder,
         address indexed targetAddress,
-        bytes4 indexed interfaceId,
+        bytes4 indexed identifier,
         bool supported
     );
 

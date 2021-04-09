@@ -7,7 +7,7 @@ interface IRefunder {
 
     function updateRefundable(
         address targetContract,
-        bytes4 interfaceId,
+        bytes4 identifier,
         bool isRefundable_,
         address validationContract,
         bytes4 validationFunc
@@ -17,7 +17,7 @@ interface IRefunder {
 
     function relayAndRefund(
         address target,
-        bytes4 identifierId,
+        bytes4 identifier,
         bytes memory arguments
     ) external returns (bytes memory);
 

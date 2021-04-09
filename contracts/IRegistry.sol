@@ -7,7 +7,7 @@ interface IRegistry {
 
     function updateRefundable(
         address targetAddress,
-        bytes4 interfaceId,
+        bytes4 identifier,
         bool supported
     ) external;
 
@@ -15,14 +15,14 @@ interface IRegistry {
 
     function getRefunder(uint256 index) external returns (address);
 
-    function getRefunderCountFor(address targetAddress, bytes4 interfaceId)
+    function getRefunderCountFor(address targetAddress, bytes4 identifier)
         external
         view
         returns (uint256);
 
     function getRefunderForAtIndex(
         address targetAddress,
-        bytes4 interfaceId,
+        bytes4 identifier,
         uint256 index
     ) external view returns (address);
 }
