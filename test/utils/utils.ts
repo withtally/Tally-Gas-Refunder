@@ -24,11 +24,6 @@ const strToHex = (text: string) => {
 	return '0x' + msg;
 }
 
-
-const getXPercentFrom = (number: BigNumber, percent: number) => {
-	return number.div(BigNumber.from('100')).mul(BigNumber.from(percent.toString()));
-}
-
 // returns a random integer from 1 to 9
 const getRandomNum = () => {
 	let randomNum = Math.floor(Math.random() * 10);
@@ -54,7 +49,6 @@ export {
 	ethToWei,
 	generateFuncIdAsBytes,
 	strToHex,
-	getXPercentFrom,
 	getRandomNum,
 	parseEvent
 }

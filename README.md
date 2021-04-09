@@ -23,8 +23,6 @@ A generic contract system for reliably refunding the gas costs of transactions. 
 
 Factory contract used for the deployment of `Refunder` contracts. Anyone is able to deploy a refunder contract and configure it for its own needs.
 
-The factory uses OpenZeppelin's [EIP-1167](https://eips.ethereum.org/EIPS/eip-1167) Clone implementation found [here](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/proxy/Clones.sol) for minimising gas costs.
-
 On `refunder` deployment `msg.sender` is the initial owner of the `Refunder` contract.
 
 ### Refunder
@@ -32,7 +30,7 @@ On `refunder` deployment `msg.sender` is the initial owner of the `Refunder` con
 Refunder contract represents the interest of a given protocol/entity that wants to sponsor a set of function calls.
 
 The contract:
-- is `ownable`. Initially set to the `msg.sender` that calls the factory
+- is `ownable`. By default set to the deployer
 - holds `ETH` for gas cost reimbursements
 - has a mapping of whitelisted `refundables`
 
@@ -62,6 +60,7 @@ The registry contract stores all `Refunder`s deployed and their supported `targe
 ## Development
 
 The project uses the [hardhat](https://hardhat.org/) framework. 
+
 ### Compile
 
 In order to compile, one must execute:

@@ -34,7 +34,7 @@ task("deploy-master-refunder", "Deploys a Master Refunder")
 
 task("deploy-refunder", "Deploys a Refunder")
 	.addParam("factory", "The address of refunders Factory")
-	.addParam("masterRefunder", "The address of initial Refunder")
+	.addParam("masterrefunder", "The address of initial Refunder")
 	.addOptionalParam("refunderVersion", "Refunder's version. default is 1")
 	.setAction(async taskArgs => {
 
@@ -42,7 +42,7 @@ task("deploy-refunder", "Deploys a Refunder")
 
 		await refunderDeployer(
 			taskArgs.factory,
-			taskArgs.masterRefunder,
+			taskArgs.masterrefunder,
 			taskArgs.refunderVersion
 		);
 	});
@@ -61,10 +61,6 @@ export default {
 	defaultNetwork: "hardhat",
 	networks: {
 		hardhat: {
-		},
-		local: {
-			url: 'http://127.0.0.1:8545',
-			accounts: ['ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80']
 		}
 	},
 
