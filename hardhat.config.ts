@@ -58,7 +58,7 @@ export default {
 		}
 	},
 	mocha: {
-		timeout: 20000
+		timeout: 200000000
 	}
 
 };
