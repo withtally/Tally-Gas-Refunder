@@ -9,5 +9,7 @@
     "INVALID_REFUNDER_INDEX": "Registry: Invalid index",
     "NOT_ELIGIABLE_FOR_REFUNDING": "Refunder: Validating contract rejected the refund",
     "CONTRACT_REVERTED": "Refunder: Validating contract reverted",
-    "FUNCTION_CALL_FAILED": "function call failed to execute"
+    "FUNCTION_CALL_FAILED": "function call failed to execute",
+    "INVALID_VERSION": "Registry: Invalid version",
+    "ALREADY_REGISTERED": "Registry: Refunder already registered"
 }

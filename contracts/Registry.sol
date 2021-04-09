@@ -46,13 +46,15 @@ contract Registry is IRegistry {
     /// @param version the version of the refunder
     function register(address refunder, uint8 version) external override {
         require(version != 0, "Registry: Invalid version");
+        require(
+            !refunders.contains(refunder),
+            "Registry: Refunder already registered"
+        );
 
-        if (!refunders.contains(refunder)) {
-            refunders.add(refunder);
-            refunderVersion[refunder] = version;
+        refunders.add(refunder);
+        refunderVersion[refunder] = version;
 
-            emit Register(refunder, version);
-        }
+        emit Register(refunder, version);
     }
 
     /**

@@ -11,7 +11,9 @@ import {
 
 import {
     REFUNDER_NOT_A_CALLER,
-    INVALID_REFUNDER_INDEX
+    INVALID_REFUNDER_INDEX,
+    INVALID_VERSION,
+    ALREADY_REGISTERED
 } from './constants/error-messages.json';
 
 import {
@@ -46,6 +48,10 @@ describe('Registry', () => {
         const Greeter = await ethers.getContractFactory("Greeter");
         greeter = await Greeter.deploy('Hello, world!', relayAndRefundFuncID, []);
         await greeter.deployed();
+    });
+
+    it('Should not allow registering refunder with version 0', async () => {
+        await expect(registry.register(notOwner.address, 0)).to.be.revertedWith(INVALID_VERSION);
     });
 
     it('Should have 0 refunders after deployment', async () => {
@@ -102,6 +108,10 @@ describe('Registry', () => {
         }
     });
 
+    it('Should revert when getting refunder with invalid index', async () => {
+        await expect(registry.getRefunder(5)).to.be.revertedWith(INVALID_REFUNDER_INDEX);
+    });
+
     describe('Pre deployed refunder', () => {
 
         const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
@@ -116,6 +126,10 @@ describe('Registry', () => {
 
             refunder = await ethers.getContractAt("Refunder", newRefunderAddress);
         })
+
+        it('Should not revert when registering already registered refunder', async () => {
+            await expect(registry.register(refunder.address, 1)).to.be.revertedWith(ALREADY_REGISTERED);
+        });
 
         it('Should successfully update refundable', async () => {
             let updateTx = await refunder.connect(notOwner).updateRefundable(greeter.address, randomFuncIdAsBytes, true, ZERO_ADDRESS, ZERO_FUNC);
@@ -163,6 +177,5 @@ describe('Registry', () => {
             let getRefunderForAtIndex = await registry.getRefunderForAtIndex(greeter.address, randomFuncIdAsBytes, 0);
             expect(getRefunderForAtIndex, "Refunder at index is invalid").to.be.eq(refunder.address);
         });
-
     })
 });

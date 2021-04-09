@@ -195,42 +195,55 @@ describe("Refunder", function () {
 
 	it("Should allow owner to edit refundable", async function () {
 		const randomAddress = greeter.address;
-		const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
+		const identifier = generateFuncIdAsBytes('setGreeting(string)');
 
 		// address, bytes4
-		const resBefore = await refunder.refundables(randomAddress, randomFuncIdAsBytes);
+		const resBefore = await refunder.refundables(randomAddress, identifier);
 		expect(resBefore.isSupported, 'Refundable is supported').to.be.eq(false);
 
-		let res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, true, ZERO_ADDRESS, ZERO_FUNC);
+		let res = await refunder.updateRefundable(randomAddress, identifier, true, ZERO_ADDRESS, ZERO_FUNC);
 		await res.wait();
 
-		const resAfter = await refunder.refundables(randomAddress, randomFuncIdAsBytes);
+		const resAfter = await refunder.refundables(randomAddress, identifier);
 		expect(resAfter.isSupported, 'Refundable is not supported').to.be.eq(true);
 
-		res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, false, ZERO_ADDRESS, ZERO_FUNC);
+		res = await refunder.updateRefundable(randomAddress, identifier, false, ZERO_ADDRESS, ZERO_FUNC);
 		await res.wait();
 
-		const resAfterEdit = await refunder.refundables(randomAddress, randomFuncIdAsBytes);
+		const resAfterEdit = await refunder.refundables(randomAddress, identifier);
 		expect(resAfterEdit.isSupported, 'Refundable is supported').to.be.eq(false);
 	});
 
 	it("Should not allow for non-owner to add refundable", async function () {
 		const randomAddress = greeter.address;
 		const randomFuncId = ethers.utils.id('setGreeting(string)');
-		const randomFuncIdAsBytes = ethers.utils.arrayify(randomFuncId.substr(0, 10));
+		const identifier = ethers.utils.arrayify(randomFuncId.substr(0, 10));
 
-		await expect(refunder.connect(nonOwner).updateRefundable(randomAddress, randomFuncIdAsBytes, true, ZERO_ADDRESS, ZERO_FUNC)).to.be.revertedWith(NOT_AN_OWNER);
+		await expect(refunder.connect(nonOwner).updateRefundable(randomAddress, identifier, true, ZERO_ADDRESS, ZERO_FUNC)).to.be.revertedWith(NOT_AN_OWNER);
 	});
 
 	it("Show not allow for non-owner to edit refundable", async function () {
 		const randomAddress = greeter.address;
-		const randomFuncIdAsBytes = generateFuncIdAsBytes('setGreeting(string)');
+		const identifier = generateFuncIdAsBytes('setGreeting(string)');
 
-		let res = await refunder.updateRefundable(randomAddress, randomFuncIdAsBytes, true, ZERO_ADDRESS, ZERO_FUNC);
+		let res = await refunder.updateRefundable(randomAddress, identifier, true, ZERO_ADDRESS, ZERO_FUNC);
 		await res.wait();
 
-		await expect(refunder.connect(nonOwner).updateRefundable(randomAddress, randomFuncIdAsBytes, false, ZERO_ADDRESS, ZERO_FUNC)).to.be.revertedWith(NOT_AN_OWNER);
+		await expect(refunder.connect(nonOwner).updateRefundable(randomAddress, identifier, false, ZERO_ADDRESS, ZERO_FUNC)).to.be.revertedWith(NOT_AN_OWNER);
 	});
+
+	it("Should be able to get Refundable info by target and identifier", async () => {
+		const randomAddress = greeter.address;
+		const identifier = generateFuncIdAsBytes('setGreeting(string)');
+
+		let res = await refunder.updateRefundable(randomAddress, identifier, true, permitter.address, isApprovedIdAsBytes);
+		await res.wait();
+
+		let refundableInfo = await refunder.getRefundable(randomAddress, identifier);
+		expect(refundableInfo.isSupported, "isSupported is not true").to.be.true;
+		expect(refundableInfo.validatingContract).to.equal(permitter.address);
+		expect(refundableInfo.validatingIdentifier).to.be.equal(ethers.utils.hexlify(isApprovedIdAsBytes));
+	})
 
 	describe('Relay and refund', () => {
 
