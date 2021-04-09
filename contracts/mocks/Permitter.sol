@@ -4,23 +4,20 @@ pragma solidity ^0.7.0;
 import "./../IRefunder.sol";
 
 contract Permitter {
-    bytes4 relayAndRefundFuncID;
-    address greeterAddress;
-    bytes4 greetFuncID;
-    bytes greeterArguments;
+    address greetAddress;
+    bytes4 greetIdentifier;
+    bytes greetArguments;
 
     mapping(address => bool) refundableUsers;
 
     constructor(
-        bytes4 relayAndRefundFuncID_,
-        address greeterAddress_,
-        bytes4 greetFuncID_,
-        bytes memory greeterArguments_
+        address _greetAddress,
+        bytes4 _greetIdentifier,
+        bytes memory _greetArguments
     ) {
-        relayAndRefundFuncID = relayAndRefundFuncID_;
-        greeterAddress = greeterAddress_;
-        greetFuncID = greetFuncID_;
-        greeterArguments = greeterArguments_;
+        greetAddress = _greetAddress;
+        greetIdentifier = _greetIdentifier;
+        greetArguments = _greetArguments;
     }
 
     function updateRefundableUser(address user, bool _isApproved) external {
@@ -30,13 +27,18 @@ contract Permitter {
     function isApproved(
         address user,
         address target,
-        bytes4 funcID,
+        bytes4 identifier,
         bytes memory args
     ) public view returns (bool) {
         return refundableUsers[user];
     }
 
-    function throwError(address user) public view returns (bool) {
+    function throwError(
+        address user,
+        address target,
+        bytes4 identifier,
+        bytes memory args
+    ) public view returns (bool) {
         require(false, "Unexpected error occur");
         return refundableUsers[user];
     }
@@ -44,13 +46,13 @@ contract Permitter {
     function reentry(
         address user,
         address target,
-        bytes4 funcID,
+        bytes4 identifier,
         bytes memory args
     ) public returns (bool) {
         IRefunder(msg.sender).relayAndRefund(
-            greeterAddress,
-            greetFuncID,
-            greeterArguments
+            greetAddress,
+            greetIdentifier,
+            greetArguments
         );
 
         return refundableUsers[user];

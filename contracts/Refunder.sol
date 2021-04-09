@@ -197,7 +197,7 @@ contract Refunder is ReentrancyGuard, Ownable, Pausable, IRefunder {
     {
         Refundable memory _refundableData = refundables[target][identifier];
         if (_refundableData.validatingContract != address(0)) {
-            bytes memory dataValidation =
+            bytes memory validationArgs =
                 abi.encodeWithSelector(
                     _refundableData.validatingIdentifier,
                     msg.sender,
@@ -205,17 +205,13 @@ contract Refunder is ReentrancyGuard, Ownable, Pausable, IRefunder {
                     identifier,
                     arguments
                 );
-            (bool successValidation, bytes memory returnDataValidation) =
-                _refundableData.validatingContract.call(dataValidation);
+            (bool success, bytes memory returnData) =
+                _refundableData.validatingContract.call(validationArgs);
+            require(success, "Refunder: Validating contract reverted");
 
-            bool decodedResult = abi.decode(returnDataValidation, (bool));
-
+            bool isAllowed = abi.decode(returnData, (bool));
             require(
-                successValidation,
-                "Refunder: Validating contract reverted"
-            );
-            require(
-                decodedResult,
+                isAllowed,
                 "Refunder: Validating contract rejected the refund"
             );
         }
