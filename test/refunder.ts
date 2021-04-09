@@ -136,6 +136,7 @@ describe("Refunder", function () {
 		expect('0').to.be.eq(balanceOfRefunderAfter.toString());
 	});
 
+	// TODO add revert
 	it("Should not be able to withdraw more ETHs than refunder balance", async function () {
 		const value = ethToWei('2');
 		const balanceOfRefunderBefore = await ethers.provider.getBalance(refunder.address);
@@ -404,7 +405,7 @@ describe("Refunder", function () {
 		}
 	});
 
-
+	// TODO update the validation here
 	async function validateRelayAndRefund(funcIdAsBytes: Uint8Array) {
 		const balanceBefore = await ethers.provider.getBalance(nonOwner.address);
 
