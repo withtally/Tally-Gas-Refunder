@@ -1,12 +1,14 @@
 //SPDX-License-Identifier: MIT
 
 pragma solidity ^0.7.4;
+pragma experimental ABIEncoderV2;
 
 import "./IRefunder.sol";
 import "./IRegistry.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 
 /**
  *  @title Refunder - core contract for refunding arbitrary contract+indentifier calls
@@ -18,6 +20,8 @@ contract Refunder is
     PausableUpgradeable,
     IRefunder
 {
+    using Address for address;
+
     /// @notice Address of the refunder registry
     address public registry;
 
@@ -29,10 +33,10 @@ contract Refunder is
      *  Important: Gas costs for the transaction arguments are not included!
      *  Calculation: base 21_000 + 128 (8 non_zero_identifier_bytes) + 96 (24 zero_identifier_bytes) + 649 (gas costs until gasProvided variable)
      */
-    uint256 public BASE_REFUND_TX_COST = 21873;
+    uint256 public constant BASE_TX_COST = 21873;
 
-    /// @notice The gas cost for executing refund internal function
-    uint256 public REFUND_OP_GAS_COST = 5106;
+    /// @notice The gas cost for executing refund internal function + emitting RelayAndRefund event
+    uint256 public constant REFUND_OP_COST = 6440;
 
     /**
      * @notice Struct storing the refundable data for a given target
@@ -50,7 +54,7 @@ contract Refunder is
     mapping(address => mapping(bytes4 => Refundable)) public refundables;
 
     /// @notice Deposit event emitted once someone deposits ETH to the contract
-    event Deposit(address indexed depositor, uint256 value);
+    event Deposit(address indexed depositor, uint256 amount);
 
     /// @notice Withdraw event emitted once the owner withdraws ETH from the contract
     event Withdraw(address indexed recipient, uint256 amount);
@@ -100,11 +104,10 @@ contract Refunder is
         _;
 
         uint256 gasUsedSoFar = gasProvided - gasleft();
-        uint256 refundAmount =
-            (gasUsedSoFar + BASE_REFUND_TX_COST + REFUND_OP_GAS_COST) *
-                tx.gasprice;
+        uint256 gas = gasUsedSoFar + BASE_TX_COST + REFUND_OP_COST;
+        uint256 refundAmount = gas * tx.gasprice;
 
-        refund(msg.sender, refundAmount);
+        Address.sendValue(msg.sender, refundAmount);
         emit RelayAndRefund(msg.sender, target, identifier, refundAmount);
     }
 
@@ -135,9 +138,13 @@ contract Refunder is
      * @notice Withdraws ETH from the contract
      * @param amount amount of ETH to withdraw
      */
-    function withdraw(uint256 amount) external override onlyOwner {
-        address payable payableAddrSender = payable(msg.sender);
-        payableAddrSender.transfer(amount);
+    function withdraw(uint256 amount) external override onlyOwner nonReentrant {
+        require(
+            address(this).balance >= amount,
+            "Refunder: Insufficient balance"
+        );
+
+        Address.sendValue(msg.sender, amount);
         emit Withdraw(msg.sender, amount);
     }
 
@@ -235,13 +242,6 @@ contract Refunder is
         return returnData;
     }
 
-    function refund(address sender, uint256 amount) internal returns (bool) {
-        address payable payableAddrSender = payable(sender);
-        payableAddrSender.transfer(amount);
-
-        return true;
-    }
-
     /// @notice Pauses refund operations of the contract
     function pause() external override onlyOwner {
         _pause();
@@ -250,5 +250,14 @@ contract Refunder is
     /// @notice Unpauses the refund operations of the contract
     function unpause() external override onlyOwner {
         _unpause();
+    }
+
+    /// @notice Returns true/false whether the
+    function getRefundable(address target, bytes4 identifier)
+        external
+        view
+        returns (Refundable memory)
+    {
+        return refundables[target][identifier];
     }
 }
